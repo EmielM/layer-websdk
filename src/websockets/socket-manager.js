@@ -572,7 +572,7 @@ class SocketManager extends Root {
     } else {
       this._lastValidateSessionRequest = Date.now();
       this.client.xhr({
-        url: '/?client=websdk' + this.client.constructor.version,
+        url: '/?action=validateConnectionForWebsocket&client=' + this.client.constructor.version,
         method: 'GET',
         sync: false,
       }, (result) => {
