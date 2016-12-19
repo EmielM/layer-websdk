@@ -1,5 +1,6 @@
 # Web SDK Change Log
 
+<<<<<<< HEAD
 ## 3.0.3
 
 * Adds a `defer` function that defers execution without using `setTimeout` but uses a `setTimeout` fallback.
@@ -14,6 +15,16 @@
 * Fixes to issue that caused fast infinite retry loop.
 * Fixes to Conversation Query that correctly ignores results
   from out-of-date requests.
+=======
+## 3.1.0
+
+* Adds Channels
+* Removes the `layer.Client` plugin system which was unused
+* Refactoring of how Client adds management of additional resources
+* Renaming/file moving for all model classes
+* Refactoring of how Queries for each additional resources are handled.
+* Refactors retry logic and ping logic; adds debug info to ping requests
+>>>>>>> Channels increment
 
 ## 3.0.0
 
