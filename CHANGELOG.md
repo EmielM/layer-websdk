@@ -1,5 +1,9 @@
 # Web SDK Change Log
 
+## 3.0.3
+
+* Adds a `setImmediate` function that defers execution without using `setTimeout` but uses a `setTimeout` fallback.
+
 ## 3.0.2
 
 * Fixes error in `npm publish`

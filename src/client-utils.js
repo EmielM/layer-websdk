@@ -86,23 +86,102 @@ exports.sortBy = (inArray, fn, reverse) => {
  * @param  {Object}     Object to clone
  * @return {Object}     New Object
  */
-exports.clone = (obj) => JSON.parse(JSON.stringify(obj));
+exports.clone = obj => JSON.parse(JSON.stringify(obj));
+
+/**
+ * Execute this function immediately after current processing is complete.
+ *
+ * A depth of up to 10 is allowed.  That means that functions you schedule using setImmediate
+ * can in turn schedule further actions.  The original actions are depth = 0; the actions scheduled
+ * by your actions are depth = 1.  These new actions may in turn schedule further actions, which happen at depth = 3.
+ * But to avoid infinite loops, if depth reaches 10, it clears the queue and ignores them.
+ *
+ * @method setImmediate
+ * @param {Function} f
+ */
+let setImmediateId = 0,
+  setImmediateDepth = 0,
+  setImmediateIsPending = false,
+  setImmediateIsRunning = false,
+  setImmediateQueue = [];
+const setImmediateMaxDepth = 10;
+
+function setImmediateProcessor() {
+  setImmediateIsPending = false;
+  setImmediateIsRunning = true;
+  clearTimeout(setImmediateId);
+  setImmediateId = 0;
+  setImmediateDepth = 0;
+  setImmediateQueue.push(setImmediateDepth);
+  try {
+    while (setImmediateQueue.length) {
+      const item = setImmediateQueue.shift();
+      if (typeof item === 'function') {
+        item();
+      } else if (item >= setImmediateMaxDepth) {
+        setImmediateQueue = [];
+        console.error('Layer Error: setImmediate Max Queue Depth Exceded');
+      } else if (typeof setImmediateQueue[setImmediateQueue.length - 1] === 'function') {
+        // If the last item is a function, then new functions were added to the queue and our depth has increased
+        setImmediateDepth++;
+        setImmediateQueue.push(setImmediateDepth);
+      }
+    }
+  } finally {
+    setImmediateIsRunning = false;
+  }
+}
+
+function setImmediate(func) {
+  setImmediateQueue.push(func);
+
+  // Any items queued by running an already queued callback should be called after a Real delay.
+  // This helps prevent delayed calls from pushing delayed calls which push delayed calls, that run forever.
+  // TODO: add a counter to prevent a chain of more than 2 of these
+  if (setImmediateIsRunning) {
+    if (!setImmediateId) {
+      setImmediateId = setTimeout(setImmediateProcessor, 15);
+    }
+  }
+
+  // If postMessage has not already been called, call it
+  else if (!setImmediateIsPending) {
+    setImmediateIsPending = true;
+    if (typeof document !== 'undefined') {
+      window.postMessage({ type: 'layer-set-immediate' }, '*');
+    } else {
+      // React Native reportedly lacks a document, and throws errors on the second parameter
+      window.postMessage({ type: 'layer-set-immediate' });
+    }
+
+    // Having seen scenarios where postMessage failed to trigger, set a backup using setTimeout that will be canceled
+    // if postMessage is succesfully called.
+    setImmediateId = setTimeout(setImmediateProcessor, 0);
+  }
+}
+
+// For Unit Testing
+setImmediate.flush = () => setImmediateProcessor();
+
+exports.setImmediate = setImmediate;
+
+addEventListener('message', (event) => {
+  if (event.data.type !== 'layer-set-immediate') return;
+  setImmediateProcessor();
+});
 
 /**
  * Execute this function asynchronously.
  *
- * Defer will use SOME technique to delay execution of your function.
- * Defer() is intended for anything that should be processed after current execution has
- * completed, even if that means 0ms delay.
+ * Shorthand for the layer.Util.setImmediate function
  *
  *      defer(function() {alert('That wasn't very long now was it!');});
  *
- * TODO: WEB-842: Add a postMessage handler.
- *
+
  * @method
  * @param  {Function} f
  */
-exports.defer = (func) => setTimeout(func, 0);
+exports.defer = setImmediate;
 
 /**
  * URL Decode a URL Encoded base64 string
@@ -126,7 +205,6 @@ exports.decode = (str) => {
   }
   return atob(output);
 };
-
 
 /**
  * Returns a delay in seconds needed to follow an exponential
