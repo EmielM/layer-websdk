@@ -91,61 +91,62 @@ exports.clone = obj => JSON.parse(JSON.stringify(obj));
 /**
  * Execute this function immediately after current processing is complete.
  *
- * A depth of up to 10 is allowed.  That means that functions you schedule using setImmediate
+ * A depth of up to 10 is allowed.  That means that functions you schedule using defer
  * can in turn schedule further actions.  The original actions are depth = 0; the actions scheduled
  * by your actions are depth = 1.  These new actions may in turn schedule further actions, which happen at depth = 3.
  * But to avoid infinite loops, if depth reaches 10, it clears the queue and ignores them.
  *
- * @method setImmediate
+ * @method defer
  * @param {Function} f
  */
 let setImmediateId = 0,
   setImmediateDepth = 0,
+
+  // Have we scheduled the queue to be processed? If not, this is false
   setImmediateIsPending = false,
-  setImmediateIsRunning = false,
+
+  // Queue of functions to call and depth integers
   setImmediateQueue = [];
+
+// If a setImmediate callback itself calls setImmediate which in turn calls setImmediate, at what point do we suspect we have an infinite loop?
+// A depth of 10 is currently considered OK, but this may need to be increased.
 const setImmediateMaxDepth = 10;
 
+// Process all callbacks in the setImmediateQueue
 function setImmediateProcessor() {
+  // Processing the queue is no longer scheduled; clear any scheduling info.
   setImmediateIsPending = false;
-  setImmediateIsRunning = true;
   clearTimeout(setImmediateId);
   setImmediateId = 0;
+
+  // Our initial depth is depth 0
   setImmediateDepth = 0;
   setImmediateQueue.push(setImmediateDepth);
-  try {
-    while (setImmediateQueue.length) {
-      const item = setImmediateQueue.shift();
-      if (typeof item === 'function') {
+
+  // Process all functions and depths in the queue starting always with the item at index 0,
+  // and removing them from the queue before processing them.
+  while (setImmediateQueue.length) {
+    const item = setImmediateQueue.shift();
+    if (typeof item === 'function') {
+      try {
         item();
-      } else if (item >= setImmediateMaxDepth) {
-        setImmediateQueue = [];
-        console.error('Layer Error: setImmediate Max Queue Depth Exceded');
-      } else if (typeof setImmediateQueue[setImmediateQueue.length - 1] === 'function') {
-        // If the last item is a function, then new functions were added to the queue and our depth has increased
-        setImmediateDepth++;
-        setImmediateQueue.push(setImmediateDepth);
+      } catch (err) {
+        console.error(err);
       }
+    } else if (item >= setImmediateMaxDepth) {
+      setImmediateQueue = [];
+      console.error('Layer Error: setImmediate Max Queue Depth Exceded');
     }
-  } finally {
-    setImmediateIsRunning = false;
   }
 }
 
-function setImmediate(func) {
+// Schedule the function to be called by adding it to the queue, and setting up scheduling if its needed.
+function defer(func) {
+  if (typeof func !== 'function') throw new Error('Function expected in defer');
   setImmediateQueue.push(func);
 
-  // Any items queued by running an already queued callback should be called after a Real delay.
-  // This helps prevent delayed calls from pushing delayed calls which push delayed calls, that run forever.
-  // TODO: add a counter to prevent a chain of more than 2 of these
-  if (setImmediateIsRunning) {
-    if (!setImmediateId) {
-      setImmediateId = setTimeout(setImmediateProcessor, 15);
-    }
-  }
-
   // If postMessage has not already been called, call it
-  else if (!setImmediateIsPending) {
+  if (!setImmediateIsPending) {
     setImmediateIsPending = true;
     if (typeof document !== 'undefined') {
       window.postMessage({ type: 'layer-set-immediate' }, '*');
@@ -161,27 +162,14 @@ function setImmediate(func) {
 }
 
 // For Unit Testing
-setImmediate.flush = () => setImmediateProcessor();
-
-exports.setImmediate = setImmediate;
+defer.flush = () => setImmediateProcessor();
 
 addEventListener('message', (event) => {
   if (event.data.type !== 'layer-set-immediate') return;
   setImmediateProcessor();
 });
 
-/**
- * Execute this function asynchronously.
- *
- * Shorthand for the layer.Util.setImmediate function
- *
- *      defer(function() {alert('That wasn't very long now was it!');});
- *
-
- * @method
- * @param  {Function} f
- */
-exports.defer = setImmediate;
+exports.defer = defer;
 
 /**
  * URL Decode a URL Encoded base64 string
