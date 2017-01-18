@@ -106,6 +106,7 @@ describe("The Client class", function() {
 
     describe("The destroy() method", function() {
         afterEach(function() {
+            if (!client.isDestroyed) client.destroy();
             client = null;
         });
         it("Should call _cleanup", function() {

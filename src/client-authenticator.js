@@ -541,7 +541,7 @@ class ClientAuthenticator extends Root {
       }
       this.persistenceFeatures = {
         conversations: this.isPersistenceEnabled,
-        channels: this.isPersistenceEnabled,
+        // channels: this.isPersistenceEnabled,
         messages: this.isPersistenceEnabled,
         identities: this.isPersistenceEnabled,
         syncQueue: this.isPersistenceEnabled,
@@ -1111,8 +1111,7 @@ ClientAuthenticator.prototype.sessionToken = '';
  * Only muck with this if told to by Layer Staff.
  * @type {String}
  */
-ClientAuthenticator.prototype.url = 'https://api-preview.layer.com';
-// ClientAuthenticator.prototype.url = 'https://api.layer.com';
+ClientAuthenticator.prototype.url = 'https://api.layer.com';
 
 /**
  * URL to Layer's Websocket server.
@@ -1120,8 +1119,7 @@ ClientAuthenticator.prototype.url = 'https://api-preview.layer.com';
  * Only muck with this if told to by Layer Staff.
  * @type {String}
  */
-ClientAuthenticator.prototype.websocketUrl = 'wss://websockets-preview.layer.com';
-// ClientAuthenticator.prototype.websocketUrl = 'wss://websockets.layer.com';
+ClientAuthenticator.prototype.websocketUrl = 'wss://websockets.layer.com';
 
 /**
  * Web Socket Manager

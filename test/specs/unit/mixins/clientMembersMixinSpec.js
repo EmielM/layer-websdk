@@ -57,7 +57,6 @@ describe("The Client Members Mixin", function() {
 
     describe("The cleanup() method", function() {
         afterEach(function() {
-            debugger;
             client._conversationsHash = client._messagesHash = client._channelsHash = client._membersHash = client._queriesHash = client._identitiesHash = {};
         });
 
@@ -80,7 +79,6 @@ describe("The Client Members Mixin", function() {
           client._membersHash["frodo"] = null;
           client._cleanup();
           expect(client._membersHash).toBe(null);
-          debugger;
       });
     });
 
