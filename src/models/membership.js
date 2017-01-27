@@ -86,6 +86,11 @@ class Membership extends Syncable {
     // this.role = client._createObject(membership.role);
 
     this.identity = membership.identity ? client._createObject(membership.identity) : client.user;
+    this.identity.on('identities:change', (evt) => {
+      this.trigger('members:change', {
+        property: 'identity',
+      });
+    }, this);
 
     if (!this.url && this.id) {
       this.url = this.getClient().url + this.id.substring(8);
@@ -118,6 +123,10 @@ class Membership extends Syncable {
 
   __getUserId() {
     return this.identity ? this.identity.userId : '';
+  }
+
+  __updateIdentity(newIdentity, oldIdentity) {
+    if (oldIdentity) oldIdentity.off(null, null, this);
   }
 
   /**

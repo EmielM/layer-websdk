@@ -233,7 +233,7 @@ class MessagePart extends Root {
    */
   _fetchContentComplete(body, callback) {
     const message = this._getMessage();
-
+    if (!message) return;
     this.body = body;
 
     this.trigger('content-loaded');
