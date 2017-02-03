@@ -407,6 +407,10 @@ class DbManager extends Root {
           email_address: identity.emailAddress,
           sync_state: identity.syncState,
           type: identity.type,
+          presence: {
+            status: identity.presence.status,
+            last_seen_at: identity.presence.lastSeenAt,
+          },
         };
       } else {
         return {
@@ -755,7 +759,7 @@ class DbManager extends Root {
    * @param {string} [fromId=]    - For pagination, provide the messageId to get Announcements after
    * @param {number} [pageSize=]  - To limit the number of results, provide a number for how many results to return.
    * @param {Function} [callback]
-   * @param {layer.Announcement[]} callback.result
+   * @param {layer.Message.Announcement[]} callback.result
    */
   loadAnnouncements(fromId, pageSize, callback) {
     try {

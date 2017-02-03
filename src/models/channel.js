@@ -1,4 +1,4 @@
-/* Feature is tested but not available on server
+/**
  * A Channel object represents a dialog amongst a large set
  * of participants.
  *
@@ -47,6 +47,16 @@
  * @class  layer.Channel
  * @extends layer.Container
  * @author  Michael Kantor
+ */
+
+/**
+ * @method setMetadataProperties
+ * @hide
+ */
+
+/**
+ * @method deleteMetadataProperties
+ * @hide
  */
 
 const Root = require('../root');

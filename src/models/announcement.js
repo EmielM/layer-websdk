@@ -74,7 +74,7 @@ class Announcement extends ConversationMessage {
    * @protected
    * @static
    * @param  {Object} message - Server's representation of the announcement
-   * @return {layer.Announcement}
+   * @return {layer.Message.Announcement}
    */
   static _createFromServer(message, client) {
     const fromWebsocket = message.fromWebsocket;

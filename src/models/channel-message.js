@@ -1,4 +1,4 @@
-/*
+/**
  * For purposes of API consistency across SDKs, this class is not exposed.
  * Instead, customers will see only the layer.Message class.
  *
@@ -88,7 +88,7 @@ class ChannelMessage extends Message {
   }
 
 
-  /*
+  /**
    * Creates a message from the server's representation of a message.
    *
    * Similar to _populateFromServer, however, this method takes a

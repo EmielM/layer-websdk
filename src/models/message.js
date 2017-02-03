@@ -675,7 +675,7 @@ class Message extends Syncable {
  */
 Message.prototype.clientId = '';
 
-/* Feature is tested but not available on server
+/**
  * Conversation ID or Channel ID that this Message belongs to.
  *
  * @type {string}

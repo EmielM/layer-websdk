@@ -471,6 +471,20 @@ describe("The Util Library", function() {
                 "layer:///identities/c": "read"
             });
         });
+
+        it("Should updated identity presence", function() {
+            expect(client.user.presence.status).not.toEqual("crazed and dazed");
+            layer.Util.layerParse({
+                client: client,
+                object: client.user,
+                operations: [
+                    {operation: "set", property: "presence.status", value: "crazed and dazed"}
+                ]
+            });
+
+            // Posttest
+            expect(client.user.presence.status).toEqual("crazed and dazed");
+        });
     });
 
     describe("The base64ToBlob() method", function() {

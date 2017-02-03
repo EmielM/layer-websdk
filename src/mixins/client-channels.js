@@ -1,4 +1,4 @@
-/* Feature is tested but not available on server
+/**
  * Adds Channel handling to the layer.Client.
  *
  * @class layer.mixins.ClientChannels

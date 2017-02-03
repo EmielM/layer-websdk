@@ -17,6 +17,7 @@
 const Root = require('../root');
 const Utils = require('../client-utils');
 const logger = require('../logger');
+const LayerError = require('../layer-error');
 const { WEBSOCKET_PROTOCOL } = require('../const');
 
 class SocketManager extends Root {
@@ -69,7 +70,6 @@ class SocketManager extends Root {
     this._lastCounter = null;
     this._hasCounter = false;
 
-    this._inReplay = false;
     this._needsReplayFrom = null;
   }
 
@@ -207,9 +207,10 @@ class SocketManager extends Root {
       this.isOpen = true;
       this.trigger('connected');
       logger.debug('Websocket Connected');
-      if (this._hasCounter) {
-        this.replayEvents(this._lastTimestamp, true);
+      if (this._hasCounter && this._lastTimestamp) {
+        this.resync(this._lastTimestamp);
       } else {
+        this._replayPresence();
         this._reschedulePing();
       }
     }
@@ -306,27 +307,40 @@ class SocketManager extends Root {
   /**
    * Replays all missed change packets since the specified timestamp
    *
-   * @method replayEvents
+   * @method resync
    * @param  {string|number}   timestamp - Iso formatted date string; if number will be transformed into formatted date string.
-   * @param  {boolean} [force=false] - if true, cancel any in progress replayEvents and start a new one
    * @param  {Function} [callback] - Optional callback for completion
    */
-  replayEvents(timestamp, force, callback) {
-    if (!timestamp) return;
-    if (force) this._inReplay = false;
+  resync(timestamp, callback) {
+    if (!timestamp) throw new Error(LayerError.dictionary.valueNotSupported);
     if (typeof timestamp === 'number') timestamp = new Date(timestamp).toISOString();
 
-    // If we are already waiting for a replay to complete, record the timestamp from which we
-    // need to replay on our next replay request
+    // Cancel any prior operation; presumably we lost connection and they're dead anyways,
+    // but the callback triggering on these could be disruptive.
+    this.client.socketRequestManager.cancelOperation('Event.replay');
+    this._replayEvents(timestamp, () => {
+      this._replayPresence(timestamp, () => {
+        this.trigger('synced');
+        if (callback) callback();
+      });
+    });
+  }
+
+  /**
+   * Replays all missed change packets since the specified timestamp
+   *
+   * @method _replayEvents
+   * @private
+   * @param  {string|number}   timestamp - Iso formatted date string; if number will be transformed into formatted date string.
+   * @param  {Function} [callback] - Optional callback for completion
+   */
+  _replayEvents(timestamp, callback) {
     // If we are simply unable to replay because we're disconnected, capture the _needsReplayFrom
-    if (this._inReplay || !this._isOpen()) {
-      if (!this._needsReplayFrom) {
-        logger.debug('Websocket request: replayEvents updating _needsReplayFrom');
-        this._needsReplayFrom = timestamp;
-      }
+    if (!this._isOpen() && !this._needsReplayFrom) {
+      logger.debug('Websocket request: _replayEvents updating _needsReplayFrom');
+      this._needsReplayFrom = timestamp;
     } else {
-      this._inReplay = true;
-      logger.info('Websocket request: replayEvents');
+      logger.info('Websocket request: _replayEvents');
       this.client.socketRequestManager.sendRequest({
         method: 'Event.replay',
         data: {
@@ -346,15 +360,12 @@ class SocketManager extends Root {
    * @param  {Boolean}   success
    */
   _replayEventsComplete(timestamp, callback, success) {
-    this._inReplay = false;
-
-
     if (success) {
-      // If replay was completed, and no other requests for replay, then trigger synced;
-      // we're done.
+      this._replayRetryCount = 0;
+
+      // If replay was completed, and no other requests for replay, then we're done.
       if (!this._needsReplayFrom) {
         logger.info('Websocket replay complete');
-        this.trigger('synced');
         if (callback) callback();
       }
 
@@ -364,7 +375,7 @@ class SocketManager extends Root {
         logger.info('Websocket replay partially complete');
         const t = this._needsReplayFrom;
         this._needsReplayFrom = null;
-        this.replayEvents(t);
+        this._replayEvents(t);
       }
     }
 
@@ -375,10 +386,61 @@ class SocketManager extends Root {
       const maxDelay = 20;
       const delay = Utils.getExponentialBackoffSeconds(maxDelay, Math.min(15, this._replayRetryCount + 2));
       logger.info('Websocket replay retry in ' + delay + ' seconds');
-      setTimeout(() => this.replayEvents(timestamp), delay * 1000);
+      setTimeout(() => this._replayEvents(timestamp), delay * 1000);
       this._replayRetryCount++;
     } else {
       logger.error('Websocket Event.replay has failed');
+    }
+  }
+
+  /**
+   * Resubscribe to presence and replay missed presence changes.
+   *
+   * @method _replayPresence
+   * @private
+   * @param  {Date}     timestamp
+   * @param  {Function} callback
+   */
+  _replayPresence(timestamp, callback) {
+    if (this.client.presenceEnabled) {
+      this.client.socketRequestManager.sendRequest({
+        method: 'Presence.update',
+        data: [
+          { operation: 'set', property: 'status', value: 'auto' },
+        ],
+      });
+    }
+    this.client.socketRequestManager.sendRequest({
+      method: 'Presence.subscribe',
+    });
+
+    this.syncPresence(timestamp, callback);
+  }
+
+  /**
+   * Synchronize all presence data or catch up on missed presence data.
+   *
+   * Typically this is called by layer.Websockets.SocketManager._replayPresence automatically,
+   * but there may be occasions where an app wants to directly trigger this action.
+   *
+   * @method syncPresence
+   * @param {String} [timestamp]    `Date.toISOString()` formatted string, returns all presence changes since that timestamp.  Returns all followed presence
+   *       if no timestamp is provided.
+   * @param {Function} [callback]   Function to call when sync is completed.
+   */
+  syncPresence(timestamp, callback) {
+    if (timestamp) {
+      return this.client.socketRequestManager.sendRequest({
+        method: 'Presence.sync',
+        data: {
+          since: timestamp,
+        },
+      }, callback, true);
+    } else {
+      return this.client.socketRequestManager.sendRequest({
+        method: 'Presence.sync',
+        data: null,
+      }, callback, true);
     }
   }
 
@@ -401,7 +463,7 @@ class SocketManager extends Root {
       // If we've missed a counter, replay to get; note that we had to update _lastCounter
       // for replayEvents to work correctly.
       if (skippedCounter) {
-        this.replayEvents(this._lastTimestamp);
+        this.resync(this._lastTimestamp);
       } else {
         this._lastTimestamp = new Date(msg.timestamp).getTime();
       }
@@ -605,7 +667,6 @@ SocketManager.prototype._lastDataFromServerTimestamp = 0;
 SocketManager.prototype._lastCounter = null;
 SocketManager.prototype._hasCounter = false;
 
-SocketManager.prototype._inReplay = false;
 SocketManager.prototype._needsReplayFrom = null;
 
 SocketManager.prototype._replayRetryCount = 0;

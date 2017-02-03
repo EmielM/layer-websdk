@@ -1,4 +1,4 @@
-/* Feature is tested but not available on server
+/**
  * Query class for running a Query on Channel Members
  *
  * @class  layer.MembersQuery
@@ -26,7 +26,7 @@ class MembersQuery extends Query {
     }
   }
 
-   /**
+  /**
    * Get the Channel UUID from the predicate property.
    *
    * Extract the Channel's UUID from the predicate... or returned the cached value.

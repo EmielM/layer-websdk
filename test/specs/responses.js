@@ -156,6 +156,10 @@ responses = {
         display_name: "Frodo The Dodo",
         first_name: "Frodo",
         last_name: "Dodo",
+        presence: {
+            status: 'away',
+            last_seen_at: new Date('2010-10-10').toISOString()
+        },
         metadata: {}
     },
     membership1: {

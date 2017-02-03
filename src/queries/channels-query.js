@@ -1,4 +1,4 @@
-/* Feature is tested but not available on server
+/**
  * Query class for running a Query on Channels
  *
  * @class  layer.ChannelsQuery

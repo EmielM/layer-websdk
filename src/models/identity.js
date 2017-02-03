@@ -58,12 +58,23 @@ class Identity extends Syncable {
       this._populateFromServer(options.fromServer);
     }
 
+    if (!this.presence) {
+      this.presence = {
+        status: Identity.STATUS.OFFLINE,
+        lastSeenAt: null,
+      };
+    }
+
     if (!this.url && this.id) {
       this.url = `${this.getClient().url}/${this.id.substring(9)}`;
     } else if (!this.url) {
       this.url = '';
     }
     this.getClient()._addIdentity(this);
+
+    this.getClient().on('online', (evt) => {
+      if (!evt.isOnline) this._updateValue(['presence', 'status'], Identity.STATUS.OFFLINE);
+    }, this);
 
     this.isInitializing = false;
   }
@@ -104,8 +115,8 @@ class Identity extends Syncable {
 
     this.userId = identity.user_id || '';
 
-    this._updateValue('avatarUrl', identity.avatar_url);
-    this._updateValue('displayName', identity.display_name);
+    this._updateValue(['avatarUrl'], identity.avatar_url);
+    this._updateValue(['displayName'], identity.display_name);
 
     const isFullIdentity = 'metadata' in identity;
 
@@ -114,12 +125,15 @@ class Identity extends Syncable {
       this.url = identity.url;
       this.type = identity.type;
 
-      this._updateValue('emailAddress', identity.email_address);
-      this._updateValue('lastName', identity.last_name);
-      this._updateValue('firstName', identity.first_name);
-      this._updateValue('metadata', identity.metadata);
-      this._updateValue('publicKey', identity.public_key);
-      this._updateValue('phoneNumber', identity.phone_number);
+      this._updateValue(['emailAddress'], identity.email_address);
+      this._updateValue(['lastName'], identity.last_name);
+      this._updateValue(['firstName'], identity.first_name);
+      this._updateValue(['metadata'], identity.metadata);
+      this._updateValue(['publicKey'], identity.public_key);
+      this._updateValue(['phoneNumber'], identity.phone_number);
+      if (!this.presence) this.presence = { status: null, lastSeenAt: null };
+      this._updateValue(['presence', 'status'], identity.presence ? identity.presence.status : Identity.STATUS.OFFLINE);
+      this._updateValue(['presence', 'lastSeenAt'], identity.presence && identity.presence.last_seen_at ? new Date(identity.presence.last_seen_at) : null);
       this.isFullIdentity = true;
     }
 
@@ -142,20 +156,54 @@ class Identity extends Syncable {
    *
    * @method _updateValue
    * @private
-   * @param {string} key - Property name
+   * @param {string[]} keys - Property name parts
    * @param {Mixed} value - Property value
    */
-  _updateValue(key, value) {
+  _updateValue(keys, value) {
+    // TODO: Remove this log
+    if (keys[1] === 'status') console.log(this.displayName + ' status = ' + value);
     if (value === null || value === undefined) value = '';
-    if (this[key] !== value) {
+    let pointer = this;
+    for (let i = 0; i < keys.length - 1; i++) {
+      pointer = pointer[keys[i]];
+    }
+    const lastKey = keys[keys.length - 1];
+
+    if (pointer[lastKey] !== value) {
       if (!this.isInitializing) {
         this._triggerAsync('identities:change', {
-          property: key,
-          oldValue: this[key],
+          property: keys.join('.'),
+          oldValue: pointer[lastKey],
           newValue: value,
         });
       }
-      this[key] = value;
+      pointer[lastKey] = value;
+    }
+  }
+
+  /**
+   * Accepts json-patch operations for modifying recipientStatus.
+   *
+   * @method _handlePatchEvent
+   * @private
+   * @param  {Object[]} data - Array of operations
+   */
+  _handlePatchEvent(newValue, oldValue, paths) {
+    if (paths.indexOf('presence') !== -1) {
+      if ('last_seen_at' in newValue) {
+        this._updateValue(['presence', 'lastSeenAt'], new Date(newValue.last_seen_at));
+        delete this.presence.last_seen_at; // Flaw in layer-patch assumes that subproperties don't get camel cased (correct assumption for `recipient_status` and `metadata`)
+      }
+      if ('status' in newValue) {
+        this._updateValue(['presence', 'status'], newValue.status);
+      }
+    } else {
+      const property = paths[0].replace(/_(.)/g, (match, value) => value.toUpperCase());
+      this._triggerAsync('identities:change', {
+        property,
+        oldValue,
+        newValue,
+      });
     }
   }
 
@@ -195,16 +243,47 @@ class Identity extends Syncable {
     });
   }
 
+  /**
+   * Set the status of the current user.
+   *
+   * @method setStatus
+   * @param {String} status    One of layer.Identity.STATUS.AVAILABLE, layer.Identity.STATUS.AWAY,
+   *        layer.Identity.STATUS.BUSY, layer.Identity.STATUS.OFLINE
+   */
+  setStatus(status) {
+    status = (status || '').toLowerCase();
+    if (!Identity.STATUS[status.toUpperCase()]) throw new Error(LayerError.dictionary.valueNotSupported);
+    if (this !== this.getClient().user) throw new Error(LayerError.dictionary.permissionDenied);
+
+    const oldValue = this.presence.status;
+    this.getClient().sendSocketRequest({
+      method: 'PATCH',
+      body: {
+        method: 'Presence.update',
+        data: [
+          { operation: 'set', property: 'status', value: status },
+        ],
+      },
+      sync: {
+        depends: [this.id],
+        target: this.id,
+      },
+    }, (result) => {
+      if (!result.success) this._updateValue(['presence', 'status'], oldValue);
+    });
+    this._updateValue(['presence', 'status'], status);
+  }
+
  /**
- * Update the UserID.
- *
- * This will not only update the User ID, but also the ID,
- * URL, and reregister it with the Client.
- *
- * @method _setUserId
- * @private
- * @param {string} userId
- */
+  * Update the UserID.
+  *
+  * This will not only update the User ID, but also the ID,
+  * URL, and reregister it with the Client.
+  *
+  * @method _setUserId
+  * @private
+  * @param {string} userId
+  */
   _setUserId(userId) {
     const client = this.getClient();
     client._removeIdentity(this);
@@ -216,15 +295,15 @@ class Identity extends Syncable {
   }
 
   /**
-  * __ Methods are automatically called by property setters.
-  *
-  * Any attempt to execute `this.userId = 'xxx'` will cause an error to be thrown.
-  * These are not intended to be writable properties
-  *
-  * @private
-  * @method __adjustUserId
-  * @param {string} value - New appId value
-  */
+   * __ Methods are automatically called by property setters.
+   *
+   * Any attempt to execute `this.userId = 'xxx'` will cause an error to be thrown.
+   * These are not intended to be writable properties
+   *
+   * @private
+   * @method __adjustUserId
+   * @param {string} value - New appId value
+   */
   __adjustUserId(userId) {
     if (this.__userId) {
       throw new Error(LayerError.dictionary.cantChangeUserId);
@@ -382,6 +461,26 @@ Identity.BotType = 'bot';
 Identity.prototype.type = Identity.UserType;
 
 /**
+ * Presence object contains presence information for this user.
+ *
+ * Properties of the sub-object are:
+ *
+ * * `status`: has the following possible values:
+ * ** `available`: User has set their status to `available`.  This is the default initial state
+ * ** `away`: App or User has changed their status to `away`
+ * ** `busy`: App or User has changed their status to `busy`
+ * ** `offline`: User is not connected or has set their status to `offline`
+ * ** `invisible`: When a user has set their status to `offline` they instead see a status of `invisible` so that they know
+ *    that they have deliberately set their status to `offline` but are still connected.
+ * * `lastSeenAt`: Approximate time that the user was last known to be connected (and not `invisible`)
+ *
+ * @property {Object} presence
+ * @property {String} presence.status
+ * @property {Date} presence.lastSeenAt
+ */
+Identity.prototype.presence = null;
+
+/**
  * Is this Identity a bot?
  *
  * If the layer.Identity.type field is equal to layer.Identity.BotType then this will return true.
@@ -393,6 +492,29 @@ Object.defineProperty(Identity.prototype, 'isBot', {
     return this.type === Identity.BotType;
   },
 });
+
+/**
+ * Possible values for layer.Identity.presence `status` field to be used in `setStatus()`
+ *
+ * * * `status`: has the following possible values:
+ * ** `available`: User has set their status to `available`.  This is the default initial state
+ * ** `away`: App or User has changed their status to `away`
+ * ** `busy`: App or User has changed their status to `busy`
+ * ** `offline`: User is not connected or has set their status to `offline`
+ * ** `invisible`: When a user has set their status to `offline` they instead see a status of `invisible` so that they know
+ *    that they have deliberately set their status to `offline` but are still connected.
+ * * `lastSeenAt`: Approximate time that the user was last known to be connected (and not `invisible`)
+ *
+ * @property {Object} STATUS
+ * @static
+ */
+Identity.STATUS = {
+  AVAILABLE: 'available',
+  AWAY: 'away',
+  OFFLINE: 'offline',
+  BUSY: 'busy',
+  INVISIBLE: 'invisible',
+};
 
 Identity.inObjectIgnore = Root.inObjectIgnore;
 

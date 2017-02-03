@@ -185,6 +185,10 @@ exports.defer = defer;
  *
  * Copied from https://github.com/auth0-blog/angular-token-auth, but
  * appears in many places on the web.
+ *
+ * @method decode
+ * @param {String} str   base64 string
+ * @return str   Decoded string
  */
 /* istanbul ignore next */
 exports.decode = (str) => {
@@ -381,6 +385,11 @@ function createParser(request) {
         },
       },
       Conversation: {
+        all: (updateObject, newValue, oldValue, paths) => {
+          updateObject._handlePatchEvent(newValue, oldValue, paths);
+        },
+      },
+      Identity: {
         all: (updateObject, newValue, oldValue, paths) => {
           updateObject._handlePatchEvent(newValue, oldValue, paths);
         },

@@ -151,11 +151,16 @@ describe("The Websocket Request Manager Class", function() {
             spyOn(requestManager, "_isOpen").and.returnValue(true);
             requestManager._requestCallbacks = {};
             var f = function() {};
-            requestManager.sendRequest({}, f);
-            var requestId = Object.keys(requestManager._requestCallbacks)[0];
-            expect(requestManager._requestCallbacks[requestId]).toEqual({
+            var request = requestManager.sendRequest({}, f);
+            expect(request).toEqual({
+                request_id: jasmine.any(String),
                 date: jasmine.any(Number),
-                callback: f
+                callback: f,
+                isChangesArray: false,
+                method: undefined,
+                batchIndex: -1,
+                batchTotal: -1,
+                results: []
             });
         });
 
@@ -187,8 +192,37 @@ describe("The Websocket Request Manager Class", function() {
             requestManager.sendRequest({hey: "ho"}, function(){});
             expect(requestManager._scheduleCallbackCleanup).toHaveBeenCalledWith();
         });
+
+        it("Should track whether changes array is expected response", function() {
+            spyOn(requestManager, "_isOpen").and.returnValue(true);
+            var request = requestManager.sendRequest({hey: "ho"}, function() {}, true);
+            expect(request.isChangesArray).toBe(true);
+
+            var request = requestManager.sendRequest({hey: "ho"}, function() {});
+            expect(request.isChangesArray).toBe(false);
+        });
     });
 
+    describe("The cancelOperation() method", function() {
+        it("Should cancel all operations of the given method name", function() {
+            spyOn(requestManager, "_isOpen").and.returnValue(true);
+            spyOn(client.socketManager, "send");
+            var spy = jasmine.createSpy("callback");
+            requestManager.sendRequest({method: "hey", data: {value: 1}}, spy);
+            requestManager.sendRequest({method: "ho", data: {value: 2}}, spy);
+            requestManager.sendRequest({method: "hey", data: {value: 3}}, spy);
+            requestManager.sendRequest({method: "you", data: {value: 4}}, spy);
+            expect(Object.keys(requestManager._requestCallbacks).length).toEqual(4);
+
+            requestManager.cancelOperation("hey");
+            expect(Object.keys(requestManager._requestCallbacks).length).toEqual(2);
+            Object.keys(requestManager._requestCallbacks).forEach(function(requestId) {
+                var request = requestManager._requestCallbacks[requestId];
+                expect(typeof request.method).toEqual('string');
+                expect(request.method).not.toEqual("hey");
+            });
+        });
+    });
 
     describe("The _scheduleCallbackCleanup() method", function() {
         it("Should schedule a call to _runCallbackCleanup", function() {

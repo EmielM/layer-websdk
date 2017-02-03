@@ -580,18 +580,12 @@ class ClientAuthenticator extends Root {
     if (this.user.isFullIdentity) {
       this._clientReady();
     } else {
-      // load the user's full Identity and update localStorage
+      // load the user's full Identity so we have presence;
       this.user._load();
       this.user.once('identities:loaded', () => {
         if (!this._isPersistedSessionsDisabled()) {
-          try {
-            // Update the session data in localStorage with our full Identity.
-            const sessionData = JSON.parse(global.localStorage[LOCALSTORAGE_KEYS.SESSIONDATA + this.appId]);
-            sessionData.user = DbManager.prototype._getIdentityData([this.user])[0];
-            global.localStorage[LOCALSTORAGE_KEYS.SESSIONDATA + this.appId] = JSON.stringify(sessionData);
-          } catch (e) {
-            // no-op
-          }
+          this._writeSessionOwner();
+          this.user.on('identities:change', this._writeSessionOwner, this);
         }
         this._clientReady();
       })
@@ -599,6 +593,23 @@ class ClientAuthenticator extends Root {
         if (!this.user.displayName) this.user.displayName = this.defaultOwnerDisplayName;
         this._clientReady();
       });
+    }
+  }
+
+  /**
+   * Write the latest state of the Session's Identity object to localStorage
+   *
+   * @method _writeSessionOwner
+   * @private
+   */
+  _writeSessionOwner() {
+    try {
+      // Update the session data in localStorage with our full Identity.
+      const sessionData = JSON.parse(global.localStorage[LOCALSTORAGE_KEYS.SESSIONDATA + this.appId]);
+      sessionData.user = DbManager.prototype._getIdentityData([this.user])[0];
+      global.localStorage[LOCALSTORAGE_KEYS.SESSIONDATA + this.appId] = JSON.stringify(sessionData);
+    } catch (e) {
+      // no-op
     }
   }
 
