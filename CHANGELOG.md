@@ -1,14 +1,18 @@
 # Web SDK Change Log
 
-## 3.1.2
+## 3.2.0
 
-* layer.SocketManager.replayEvents is now a private method; use layer.SocketManager.resync instead.
 * Adds `presence` property to Identity objects
   * `identities:change` events are triggered whenever `presence.status` or `presense.lastSeenAt` changes.
   * `layer.Client.presenceEnabled` is a new property that defaults to `true`; initialize your client with `false`
     if presence is not something your user wants to expose.
+* Adds Channels
+  * Channel instance is `layer.Channel`
+  * Channels are queried using `model: layer.Query.Channel`
+  * Channels have `layer.Membership` objects representing members of the channel.
+  * Members are queried using `model: layer.Query.Membership`
 * Identity change events now trigger when receiving changes via websocket
-
+* layer.SocketManager.replayEvents is now a private method; use layer.SocketManager.resync instead.
 
 ## 3.1.1
 
