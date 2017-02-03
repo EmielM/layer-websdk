@@ -225,7 +225,7 @@ module.exports = function (grunt) {
     },
     watch: {
       debug: {
-        files: ['src/**', "Gruntfile.js"],
+        files: ['package.json', 'src/**', "Gruntfile.js"],
         tasks: ['debug', 'prepublish']
       }
     },

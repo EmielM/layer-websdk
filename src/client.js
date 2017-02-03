@@ -576,7 +576,7 @@ Client.prototype._scheduleCheckAndPurgeCacheAt = 0;
  * @static
  * @type {String}
  */
-Client.version = '3.1.1';
+Client.version = '3.2.0';
 
 /**
  * Any Conversation or Message that is part of a Query's results are kept in memory for as long as it
