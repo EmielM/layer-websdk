@@ -58,7 +58,11 @@ describe("The DbManager Class", function() {
           avatarUrl: "avatar",
           displayName: "display",
           syncState: layer.Constants.SYNC_STATE.SYNCED,
-          isFullIdentity: true
+          isFullIdentity: true,
+          presence: {
+            status: 'away',
+            lastSeenAt: new Date()
+          }
         });
         client.user = identity;
 
@@ -865,7 +869,11 @@ describe("The DbManager Class", function() {
         public_key: identity.publicKey,
         phone_number: identity.phoneNumber,
         sync_state: identity.syncState,
-        type: layer.Identity.UserType
+        type: layer.Identity.UserType,
+        presence: {
+          status: identity.presence.status,
+          last_seen_at: identity.presence.lastSeenAt.toISOString()
+        }
       }]);
     });
   });

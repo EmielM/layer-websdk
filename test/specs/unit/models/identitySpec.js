@@ -438,14 +438,26 @@ function deleteTables(done) {
       });
 
       describe("The _handlePatchEvent", function() {
-        it("Should update lastSeenAt and status", function() {
-          spyOn(identity, "_updateValue");
+        it("Should update lastSeenAt and status and trigger change events", function() {
+          spyOn(identity, "_triggerAsync");
+          identity.presence.status = 'available';
+          identity.presence.last_seen_at = new Date('2020-01-01');
           identity._handlePatchEvent(
             {status: "available", last_seen_at: "2010-01-01"},
-            {status: "unavailable", last_seen_at: "2010-02-02"},
+            {status: "away", lastSeenAt: new Date("2020-01-01")},
             ['presence.status', 'presence.last_seen_at']);
-          expect(identity._updateValue).toHaveBeenCalledWith(['presence', 'status'], 'available');
-          expect(identity._updateValue).toHaveBeenCalledWith(['presence', 'lastSeenAt'], jasmine.any(Date));
+            expect(identity.presence.status).toEqual('available'); // not updated
+            expect(identity.presence.lastSeenAt.toISOString().substring(0, 10)).toEqual('2010-01-01'); // updated
+          expect(identity._triggerAsync).toHaveBeenCalledWith('identities:change', {
+            property: 'presence.status',
+            oldValue: 'away',
+            newValue: 'available'
+          });
+          expect(identity._triggerAsync).toHaveBeenCalledWith('identities:change', {
+            property: 'presence.lastSeenAt',
+            oldValue: new Date('2020-01-01'),
+            newValue: new Date('2010-01-01')
+          });
         });
       });
 

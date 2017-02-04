@@ -409,7 +409,7 @@ class DbManager extends Root {
           type: identity.type,
           presence: {
             status: identity.presence.status,
-            last_seen_at: identity.presence.lastSeenAt,
+            last_seen_at: identity.presence.lastSeenAt ? identity.presence.lastSeenAt.toISOString() : null,
           },
         };
       } else {

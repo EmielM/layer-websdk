@@ -846,7 +846,7 @@ describe("The Client class", function() {
                 var m2 = c.createMessage("b").send();
                 var m3 = c.createMessage("c").send();
                 jasmine.clock().tick(1);
-
+debugger;
                 // Pretest
                 expect(query.data).toEqual([m3, m2, m1]);
 

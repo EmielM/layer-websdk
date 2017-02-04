@@ -76,6 +76,7 @@ class Container extends Syncable {
         },
       }, result => this._createResult(result));
     }
+    if (message) this._setupMessage(message);
     return this;
   }
 

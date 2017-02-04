@@ -334,6 +334,7 @@ class SocketManager extends Root {
     // Cancel any prior operation; presumably we lost connection and they're dead anyways,
     // but the callback triggering on these could be disruptive.
     this.client.socketRequestManager.cancelOperation('Event.replay');
+    this.client.socketRequestManager.cancelOperation('Presence.sync');
     this._replayEvents(timestamp, () => {
       this._replayPresence(timestamp, () => {
         this.trigger('synced');

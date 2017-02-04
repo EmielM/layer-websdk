@@ -121,27 +121,9 @@ class Channel extends Container {
     return new ChannelMessage(messageConfig);
   }
 
-
-  /**
-   * Create this Conversation on the server.
-   *
-   * Called my layer.Message.send to insure its Conversation exists
-   * on the server.
-   *
-   * @method send
-   * @param {layer.Message.ChannelMessage} [message] Tells the Conversation what its last_message will be
-   * @return {layer.Conversation} this
-   */
-  send(message) {
-    // Conversations can just check the lastMessage position and increment it.
-    // Channels must do a hackier calculation that sets the next position to a number larger than the server
-    // could ever deliver, and then increment that floating point position by a large enough increment
-    // that we need not worry about Floating point rounding errors.  Lots of guesswork here.
-    if (message) {
-      message.position = Channel.nextPosition;
-      Channel.nextPosition += 8192;
-    }
-    return super.send(message);
+  _setupMessage(message) {
+    message.position = Channel.nextPosition;
+    Channel.nextPosition += 8192;
   }
 
   /**

@@ -145,6 +145,23 @@ class Conversation extends Container {
   }
 
 
+  _setupMessage(message) {
+    // Setting a position is required if its going to get sorted correctly by query.
+    // The correct position will be written by _populateFromServer when the object
+    // is returned from the server.  We increment the position by the time since the prior lastMessage was sent
+    // so that if multiple tabs are sending messages and writing them to indexedDB, they will have positions in correct chronological order.
+    // WARNING: The query will NOT be resorted using the server's position value.
+    let position;
+    if (this.lastMessage) {
+      position = (this.lastMessage.position + Date.now()) - this.lastMessage.sentAt.getTime();
+      if (position === this.lastMessage.position) position++;
+    } else {
+      position = 0;
+    }
+    message.position = position;
+    this.lastMessage = message;
+  }
+
   /**
    * Create this Conversation on the server.
    *
@@ -180,27 +197,11 @@ class Conversation extends Container {
     const wasLocalDistinct = Boolean(this._sendDistinctEvent);
     if (this._sendDistinctEvent) this._handleLocalDistinctConversation();
 
-    // If a message is passed in, then that message is being sent, and is our
-    // new lastMessage (until the websocket tells us otherwise)
-    if (message) {
-      // Setting a position is required if its going to get sorted correctly by query.
-      // The correct position will be written by _populateFromServer when the object
-      // is returned from the server.  We increment the position by the time since the prior lastMessage was sent
-      // so that if multiple tabs are sending messages and writing them to indexedDB, they will have positions in correct chronological order.
-      // WARNING: The query will NOT be resorted using the server's position value.
-      let position;
-      if (this.lastMessage) {
-        position = (this.lastMessage.position + Date.now()) - this.lastMessage.sentAt.getTime();
-        if (position === this.lastMessage.position) position++;
-      } else {
-        position = 0;
-      }
-      message.position = position;
-      this.lastMessage = message;
-    }
-
     // If the Conversation is already on the server, don't send.
-    if (wasLocalDistinct || this.syncState !== Constants.SYNC_STATE.NEW) return this;
+    if (wasLocalDistinct || this.syncState !== Constants.SYNC_STATE.NEW) {
+      if (message) this._setupMessage(message);
+      return this;
+    }
 
     // Make sure this user is a participant (server does this for us, but
     // this insures the local copy is correct until we get a response from

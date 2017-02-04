@@ -182,6 +182,9 @@ class Identity extends Syncable {
   /**
    * Accepts json-patch operations for modifying recipientStatus.
    *
+   * Note that except for a camelcase error in last_seen_at,
+   * all properties are set prior to calling this method.
+   *
    * @method _handlePatchEvent
    * @private
    * @param  {Object[]} data - Array of operations

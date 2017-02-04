@@ -12,6 +12,8 @@
     * Channels are queried using `model: layer.Query.Channel`
     * Channels have `layer.Membership` objects representing members of the channel.
     * Members are queried using `model: layer.Query.Membership`
+  * Adds `layer.Message.presend()` which allows a message that hasn't yet been sent to be added to Query results and rendered
+    in a Message List driven by that Query.
 * Fixes/Changes:
   * Identity change events now trigger when receiving changes via websocket
   * layer.SocketManager.replayEvents is now a private method; use layer.SocketManager.resync instead.
