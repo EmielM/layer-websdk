@@ -1,5 +1,33 @@
 /**
- * Query class for running a Query on Conversations
+ * Query class for running a Query on Conversations.
+ *
+ *
+ *      var conversationQuery = client.createQuery({
+ *        client: client,
+ *        model: layer.Query.Conversation,
+ *        sortBy: [{'createdAt': 'desc'}]
+ *      });
+ *
+ *
+ * You can change the `paginationWindow` and `sortBy` properties at any time using:
+ *
+ *      query.update({
+ *        paginationWindow: 200
+ *      });
+ *
+ * You can release data held in memory by your queries when done with them:
+ *
+ *      query.destroy();
+ *
+ * #### sortBy
+ *
+ * Note that the `sortBy` property is only supported for Conversations at this time and only
+ * supports "createdAt" and "lastMessage.sentAt" as sort fields, and only supports `desc` sort direction.
+ *
+ *      query.update({
+ *        sortBy: [{'lastMessage.sentAt': 'desc'}]
+ *      });
+ *
  *
  * @class  layer.ConversationsQuery
  * @extends layer.Query

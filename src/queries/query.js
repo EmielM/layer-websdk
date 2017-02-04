@@ -32,19 +32,19 @@
  *     queryBuilder.paginationWindow(200);
  *     query.update(queryBuilder);
  *
- * You can release Conversations and Messages held in memory by your queries when done with them:
+ * You can release data held in memory by your queries when done with them:
  *
  *      query.destroy();
  *
- * #### predicate
+ * #### Query Types
  *
- * Note that the `predicate` property is only supported for Messages, and only supports
- * querying by Conversation: `conversation.id = 'layer:///conversations/UUIUD'`
+ * For documentation on creating each of these types of queries, see the specified Query Subclass:
  *
- * #### sortBy
- *
- * Note that the `sortBy` property is only supported for Conversations at this time and only
- * supports "createdAt" and "lastMessage.sentAt" as sort fields.
+ * * layer.ConversationsQuery
+ * * layer.ChannelsQuery
+ * * layer.MessagesQuery
+ * * layer.IdentitiesQuery
+ * * layer.MembersQuery
  *
  * #### dataType
  *
@@ -469,8 +469,8 @@ class Query extends Root {
         }, 1500);
       } else {
         this._isSyncingId = 0;
-        this._appendResults(results, false);
         this.totalSize = Number(results.xhr.getResponseHeader('Layer-Count'));
+        this._appendResults(results, false);
 
         if (results.data.length < pageSize) this.pagedToEnd = true;
       }

@@ -290,8 +290,6 @@ class Conversation extends Container {
       this.lastMessage = client.getMessage(conversation.last_message);
     } else if (conversation.last_message) {
       this.lastMessage = client._createObject(conversation.last_message);
-    } else {
-      this.lastMessage = null;
     }
     this._register();
 

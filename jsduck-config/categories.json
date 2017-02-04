@@ -21,7 +21,7 @@
           "layer.Channel",
           "layer.Message.ConversationMessage",
           "layer.Message.ChannelMessage",
-          "layer.Message.Announcement",
+          "layer.Announcement",
           "layer.MessagePart",
           "layer.Membership",
           "layer.Query"

@@ -8,7 +8,7 @@
  * delivered via `messages:add` events when an Announcement is provided via
  * websocket to the client, and `change` events on an Announcements Query.
  *
- * @class  layer.Message.Announcement
+ * @class  layer.Announcement
  * @extends layer.Message.ConversationMessage
  */
 
@@ -74,7 +74,7 @@ class Announcement extends ConversationMessage {
    * @protected
    * @static
    * @param  {Object} message - Server's representation of the announcement
-   * @return {layer.Message.Announcement}
+   * @return {layer.Announcement}
    */
   static _createFromServer(message, client) {
     const fromWebsocket = message.fromWebsocket;

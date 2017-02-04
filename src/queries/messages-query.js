@@ -1,6 +1,30 @@
 /**
  * Query class for running a Query on Messages
  *
+ *      var messageQuery = client.createQuery({
+ *        client: client,
+ *        model: layer.Query.Message,
+ *        predicate: 'conversation.id = "layer:///conversations/UUID"'
+ *      });
+ *
+ * You can change the data selected by your query any time you want using:
+ *
+ *      query.update({
+ *        predicate: 'channel.id = "layer:///channels/UUID2"'
+ *      });
+ *
+ * You can release data held in memory by your queries when done with them:
+ *
+ *      query.destroy();
+ *
+ * #### predicate
+ *
+ * Note that the `predicate` property is only supported for Messages and layer.Membership, and only supports
+ * querying by Conversation or Channel:
+ *
+ * * `conversation.id = 'layer:///conversations/UUIUD'`
+ * * `channel.id = 'layer:///channels/UUIUD'`
+ *
  * @class  layer.MessagesQuery
  * @extends layer.Query
  */

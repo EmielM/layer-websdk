@@ -160,8 +160,6 @@ class Identity extends Syncable {
    * @param {Mixed} value - Property value
    */
   _updateValue(keys, value) {
-    // TODO: Remove this log
-    if (keys[1] === 'status') console.log(this.displayName + ' status = ' + value);
     if (value === null || value === undefined) value = '';
     let pointer = this;
     for (let i = 0; i < keys.length - 1; i++) {
@@ -188,23 +186,26 @@ class Identity extends Syncable {
    * @private
    * @param  {Object[]} data - Array of operations
    */
-  _handlePatchEvent(newValue, oldValue, paths) {
-    if (paths.indexOf('presence') !== -1) {
-      if ('last_seen_at' in newValue) {
-        this._updateValue(['presence', 'lastSeenAt'], new Date(newValue.last_seen_at));
+  _handlePatchEvent(newValueIn, oldValueIn, paths) {
+    paths.forEach((path) => {
+      let newValue = newValueIn,
+        oldValue = oldValueIn;
+      if (path === 'presence.last_seen_at') {
+        this.presence.lastSeenAt = new Date(newValue.last_seen_at);
+        newValue = this.presence.lastSeenAt;
+        oldValue = oldValue.lastSeenAt;
         delete this.presence.last_seen_at; // Flaw in layer-patch assumes that subproperties don't get camel cased (correct assumption for `recipient_status` and `metadata`)
+      } else if (path === 'presence.status') {
+        newValue = this.presence.status;
+        oldValue = oldValue.status;
       }
-      if ('status' in newValue) {
-        this._updateValue(['presence', 'status'], newValue.status);
-      }
-    } else {
-      const property = paths[0].replace(/_(.)/g, (match, value) => value.toUpperCase());
+      const property = path.replace(/_(.)/g, (match, value) => value.toUpperCase());
       this._triggerAsync('identities:change', {
         property,
         oldValue,
         newValue,
       });
-    }
+    });
   }
 
   /**

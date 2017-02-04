@@ -121,6 +121,14 @@ describe("The Client Conversation Mixin", function() {
             }).toThrowError(layer.LayerError.dictionary.idParamRequired);
             expect(layer.LayerError.dictionary.idParamRequired.length > 0).toBe(true);
         });
+
+        it("Should not load if not ready", function() {
+            client.isReady = false;
+            requests.reset();
+            expect(function() {
+                client.getConversation(cid1, true);
+            }).toThrowError(layer.LayerError.dictionary.clientMustBeReady);
+        });
     });
 
     describe("The _addConversation() method", function() {

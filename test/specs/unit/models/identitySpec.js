@@ -181,7 +181,10 @@ function deleteTables(done) {
 
         it("Should always initialize the presence object", function() {
           var i1 = new layer.Identity({client: client});
-          expect(i1.presence).toEqual({});
+          expect(i1.presence).toEqual({
+            status: 'offline',
+            lastSeenAt: null
+          });
 
           var i2 = layer.Identity._createFromServer(responses.useridentity, client);
           expect(i2.presence).toEqual({
@@ -290,12 +293,12 @@ function deleteTables(done) {
           });
           expect(identity._triggerAsync).toHaveBeenCalledWith("identities:change", {
             property: "presence.status",
-            oldValue: undefined,
+            oldValue: 'offline',
             newValue: 'away'
           });
           expect(identity._triggerAsync).toHaveBeenCalledWith("identities:change", {
             property: "presence.lastSeenAt",
-            oldValue: undefined,
+            oldValue: null,
             newValue: lastSeenAt
           });
           expect(identity._triggerAsync.calls.count()).toEqual(8);

@@ -2,17 +2,22 @@
 
 ## 3.2.0
 
-* Adds `presence` property to Identity objects
-  * `identities:change` events are triggered whenever `presence.status` or `presense.lastSeenAt` changes.
-  * `layer.Client.presenceEnabled` is a new property that defaults to `true`; initialize your client with `false`
-    if presence is not something your user wants to expose.
-* Adds Channels
-  * Channel instance is `layer.Channel`
-  * Channels are queried using `model: layer.Query.Channel`
-  * Channels have `layer.Membership` objects representing members of the channel.
-  * Members are queried using `model: layer.Query.Membership`
-* Identity change events now trigger when receiving changes via websocket
-* layer.SocketManager.replayEvents is now a private method; use layer.SocketManager.resync instead.
+* New Features:
+  * Adds `presence` property to Identity objects
+    * `identities:change` events are triggered whenever `presence.status` or `presense.lastSeenAt` changes.
+    * `layer.Client.presenceEnabled` is a new property that defaults to `true`; initialize your client with `false`
+      if presence is not something your user wants to expose.
+  * Adds Channels
+    * Channel instance is `layer.Channel`
+    * Channels are queried using `model: layer.Query.Channel`
+    * Channels have `layer.Membership` objects representing members of the channel.
+    * Members are queried using `model: layer.Query.Membership`
+* Fixes/Changes:
+  * Identity change events now trigger when receiving changes via websocket
+  * layer.SocketManager.replayEvents is now a private method; use layer.SocketManager.resync instead.
+  * Prevents websocket server pings from thrashing multiple times per second
+  * Fixes error where `conversation.lastMessage` was reset
+  * Updates `query.totalSize` prior to triggering change events
 
 ## 3.1.1
 
