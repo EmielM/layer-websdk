@@ -556,6 +556,7 @@ class ClientAuthenticator extends Root {
       this.dbManager = new DbManager({
         client: this,
         tables: this.persistenceFeatures,
+        enabled: this.isPersistenceEnabled,
       });
     }
 

@@ -75,7 +75,7 @@ class DbManager extends Root {
 
     // If no indexedDB, treat everything as disabled.
     /* istanbul ignore next */
-    if (!window.indexedDB) {
+    if (!window.indexedDB || !options.enabled) {
       options.tables = {};
     } else {
       // Test if Arrays as keys supported, disable persistence if not

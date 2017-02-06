@@ -20,6 +20,7 @@
   * Prevents websocket server pings from thrashing multiple times per second
   * Fixes error where `conversation.lastMessage` was reset
   * Updates `query.totalSize` prior to triggering change events
+  * Unit tests no longer choke on browsers that reject dual key indexedDB tables
 
 ## 3.1.1
 

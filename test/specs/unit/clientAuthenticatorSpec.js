@@ -4,12 +4,16 @@ describe("The Client Authenticator Class", function() {
     var appId = "layer:///apps/staging/ffffffff-ffff-ffff-ffff-ffffffffffff";
     var userId = "93c83ec4-b508-4a60-8550-099f9c42ec1a";
     var identityToken = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImN0eSI6ImxheWVyLWVpdDt2PTEiLCJraWQiOiIyOWUzN2ZhZS02MDdlLTExZTQtYTQ2OS00MTBiMDAwMDAyZjgifQ.eyJpc3MiOiI4YmY1MTQ2MC02MDY5LTExZTQtODhkYi00MTBiMDAwMDAwZTYiLCJwcm4iOiI5M2M4M2VjNC1iNTA4LTRhNjAtODU1MC0wOTlmOWM0MmVjMWEiLCJpYXQiOjE0MTcwMjU0NTQsImV4cCI6MTQxODIzNTA1NCwibmNlIjoiRFZPVFZzcDk0ZU9lNUNzZDdmaWVlWFBvUXB3RDl5SjRpQ0EvVHJSMUVJT25BSEdTcE5Mcno0Yk9YbEN2VDVkWVdEdy9zU1EreVBkZmEydVlBekgrNmc9PSIsImRpc3BsYXlfbmFtZSI6IlRlc3QgVXNlciIsImF2YXRhcl91cmwiOiJodHRwczovL2dvb2dsZS5jb20vSW52YWxpZEltYWdlLnBuZyIsImlkIjoibGF5ZXI6Ly8vaWRlbnRpdGllcy85M2M4M2VjNC1iNTA4LTRhNjAtODU1MC0wOTlmOWM0MmVjMWEifQ==";
-
+    var dbIsEnabled = true;
     var client, requests;
     var userId = '93c83ec4-b508-4a60-8550-099f9c42ec1a', userIdentity;
-    beforeAll(function() {
+    beforeAll(function(done) {
         jasmine.addCustomEqualityTester(mostRecentEqualityTest);
         jasmine.addCustomEqualityTester(responseTest);
+        testDbEnabled(function(result) {
+            dbIsEnabled = result;
+            done();
+        });
     });
 
     beforeEach(function() {
@@ -1036,6 +1040,7 @@ describe("The Client Authenticator Class", function() {
             });
 
             it("Should initialize the dbManager to all disabled if not isTrustedDevice and isPersitenceEnabled", function () {
+                if (!dbIsEnabled) return expect(true).toBe(true);
                 // Setup
                 client.isTrustedDevice = false;
                 client.isPersistenceEnabled = true;
@@ -1052,6 +1057,8 @@ describe("The Client Authenticator Class", function() {
 
 
             it("Should initialize the dbManager to all disabled if not isTrustedDevice and persistenceFeatures provided", function () {
+                if (!dbIsEnabled) return expect(true).toBe(true);
+
                 // Setup
                 client.isTrustedDevice = false;
                 client.persistenceFeatures = {
@@ -1074,6 +1081,8 @@ describe("The Client Authenticator Class", function() {
             });
 
             it("Should initialize the dbManager to false if isTrustedDevice but isPersistenceEnabled is false and no persistenceFeatures specified", function () {
+                if (!dbIsEnabled) return expect(true).toBe(true);
+
                 // Setup
                 client.isTrustedDevice = true;
                 client.isPersistenceEnabled = false;
@@ -1090,6 +1099,8 @@ describe("The Client Authenticator Class", function() {
 
 
             it("Should initialize the dbManager to custom values if isTrustedDevice and persistenceFeatures provided", function () {
+                if (!dbIsEnabled) return expect(true).toBe(true);
+
                 // Setup
                 client.isTrustedDevice = true;
                 client.isPersistenceEnabled = true;
@@ -1113,6 +1124,8 @@ describe("The Client Authenticator Class", function() {
             });
 
             it("Should initialize the dbManager to custom values if isTrustedDevice and persistenceFeatures provided but not persistenceEnabled", function () {
+                if (!dbIsEnabled) return expect(true).toBe(true);
+
                 // Setup
                 client.isTrustedDevice = true;
                 client.isPersistenceEnabled = false;
