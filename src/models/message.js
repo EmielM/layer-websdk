@@ -470,6 +470,11 @@ class Message extends Syncable {
     if (success) {
       this._populateFromServer(data);
       this._triggerAsync('messages:sent');
+      this._triggerAsync('messages:change', {
+        property: 'syncState',
+        oldValue: Constants.SYNC_STATE.SAVING,
+        newValue: Constants.SYNC_STATE.SYNCED,
+      });
     } else {
       this.trigger('messages:sent-error', { error: data });
       this.destroy();

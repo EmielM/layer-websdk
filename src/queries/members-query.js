@@ -78,7 +78,7 @@ class MembersQuery extends Query {
 
     // Do nothing if we don't have a conversation to query on
     if (!predicateIds) {
-      if (!this.predicate.match(/['"]/)) {
+      if (this.predicate && !this.predicate.match(/['"]/)) {
         Logger.error('This query may need to quote its value');
       }
       return;

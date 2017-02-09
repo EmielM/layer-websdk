@@ -548,13 +548,6 @@ class Client extends ClientAuth {
 }
 
 /**
- * If presence is enabled, then your presence can be set/restored.
- *
- * @type {Boolean} [presenceEnabled=true]
- */
-Client.prototype.presenceEnabled = true;
-
-/**
  * Array of items to be checked to see if they can be uncached.
  *
  * @private

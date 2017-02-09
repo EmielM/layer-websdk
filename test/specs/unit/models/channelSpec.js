@@ -187,6 +187,27 @@ describe("The Channel Class", function() {
       });
     });
 
+    describe("The _createResultConflict() method", function() {
+      it("Should call _createSuccess if given a channel", function() {
+        var returnedChannel = {};
+        channel = new layer.Channel({client: client});
+        spyOn(channel, "trigger");
+        spyOn(channel, "_createSuccess");
+        channel._createResultConflict({data: returnedChannel});
+        expect(channel._createSuccess).toHaveBeenCalledWith(returnedChannel);
+        expect(channel.trigger).not.toHaveBeenCalled();
+      });
+
+      it("Should trigger sent-error if not given a channel", function() {
+        channel = new layer.Channel({client: client});
+        spyOn(channel, "trigger");
+        spyOn(channel, "_createSuccess");
+        channel._createResultConflict({data: null});
+        expect(channel.trigger).toHaveBeenCalledWith('channels:sent-error', {data: null});
+        expect(channel._createSuccess).not.toHaveBeenCalled();
+      });
+    });
+
     describe("The _populateFromServer() method", function() {
         var channel, c;
         beforeEach(function() {

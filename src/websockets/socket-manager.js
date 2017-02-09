@@ -115,6 +115,7 @@ class SocketManager extends Root {
    */
   connect(evt) {
     if (this.client.isDestroyed || !this.client.isOnline) return;
+    if (this._isOpen()) return this._reconnect();
 
     this._closing = false;
 
@@ -456,7 +457,6 @@ class SocketManager extends Root {
     } else {
       return this.client.socketRequestManager.sendRequest({
         method: 'Presence.sync',
-        data: null,
       }, callback, true);
     }
   }

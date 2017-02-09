@@ -171,7 +171,7 @@ class ClientAuthenticator extends Root {
     }
   }
 
-/**
+  /**
    * Restore the Identity for the session owner from localStorage.
    *
    * @method _restoreLastSession
@@ -311,7 +311,9 @@ class ClientAuthenticator extends Root {
     }
 
     this.isConnected = true;
-    setTimeout(() => this._authComplete({ session_token: sessionToken }, false), 1);
+    setTimeout(() => this._authComplete({
+      session_token: sessionToken,
+    }, false), 1);
     return this;
   }
 
@@ -627,6 +629,9 @@ class ClientAuthenticator extends Root {
   _clientReady() {
     if (!this.isReady) {
       this.isReady = true;
+      if (this.presenceEnabled && !this.user.presence.status) {
+        this.user.presence.setStatus(Identity.STATUS.AVAILABLE);
+      }
       this.trigger('ready');
     }
   }
@@ -804,16 +809,16 @@ class ClientAuthenticator extends Root {
     if (this.isConnected) throw new Error(LayerError.dictionary.cantChangeIfConnected);
   }
 
- /**
-  * __ Methods are automatically called by property setters.
-  *
-  * Any attempt to execute `this.user = userIdentity` will cause an error to be thrown
-  * if the client is already connected.
-  *
-  * @private
-  * @method __adjustUser
-  * @param {string} user - new Identity object
-  */
+  /**
+   * __ Methods are automatically called by property setters.
+   *
+   * Any attempt to execute `this.user = userIdentity` will cause an error to be thrown
+   * if the client is already connected.
+   *
+   * @private
+   * @method __adjustUser
+   * @param {string} user - new Identity object
+   */
   __adjustUser(user) {
     if (this.isConnected) {
       throw new Error(LayerError.dictionary.cantChangeIfConnected);
@@ -967,7 +972,7 @@ class ClientAuthenticator extends Root {
    */
   _xhrFixAuth(headers) {
     if (this.sessionToken && !headers.Authorization) {
-      headers.authorization = 'Layer session-token="' +  this.sessionToken + '"'; // eslint-disable-line
+      headers.authorization = 'Layer session-token="' + this.sessionToken + '"'; // eslint-disable-line
     }
   }
 
@@ -1096,6 +1101,15 @@ ClientAuthenticator.prototype.isConnected = false;
  */
 ClientAuthenticator.prototype.isReady = false;
 
+
+/* JSDUCK
+ * If presence is enabled, then your presence can be set/restored.
+ *
+ * @type {Boolean} [presenceEnabled=true]
+ */
+ClientAuthenticator.prototype.presenceEnabled = true;
+
+
 /**
  * Your Layer Application ID. This value can not be changed once connected.
  * To find your Layer Application ID, see your Layer Developer Dashboard.
@@ -1143,7 +1157,7 @@ ClientAuthenticator.prototype.socketManager = null;
 
 /**
  * Web Socket Request Manager
-* @type {layer.Websockets.RequestManager}
+ * @type {layer.Websockets.RequestManager}
  */
 ClientAuthenticator.prototype.socketRequestManager = null;
 

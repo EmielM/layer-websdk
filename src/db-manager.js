@@ -74,12 +74,13 @@ class DbManager extends Root {
     super(options);
 
     // If no indexedDB, treat everything as disabled.
-    /* istanbul ignore next */
     if (!window.indexedDB || !options.enabled) {
       options.tables = {};
     } else {
       // Test if Arrays as keys supported, disable persistence if not
       let enabled = true;
+
+      /* istanbul ignore next */
       try {
         window.IDBKeyRange.bound(['announcement', 0], ['announcement', MAX_SAFE_INTEGER]);
       } catch (e) {

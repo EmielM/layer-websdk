@@ -170,7 +170,19 @@ class Channel extends Container {
   }
 
   _createResultConflict(data) {
-    this._createSuccess(data.data);
+    const channel = data.data;
+    if (channel) {
+      this._createSuccess(channel);
+    } else {
+      this.syncState = Constants.SYNC_STATE.NEW;
+      this._syncCounter = 0;
+      this.trigger('channels:sent-error', { error: data });
+    }
+  }
+
+  __adjustName(newValue) {
+    if (this._inLayerParser || this.isNew() || this.isLoading) return;
+    throw new Error(LayerError.dictionary.permissionDenied);
   }
 
   /**
@@ -185,7 +197,6 @@ class Channel extends Container {
    * @param  {string} oldValue
    */
   __updateName(newValue, oldValue) {
-    if (this._inLayerParser) return;
     this._triggerAsync('channels:change', {
       property: 'name',
       oldValue,
@@ -333,6 +344,38 @@ class Channel extends Container {
    */
   delete() {
     this._delete('');
+  }
+
+  /**
+   * LayerPatch will call this after changing any properties.
+   *
+   * Trigger any cleanup or events needed after these changes.
+   *
+   * TODO: Move this to layer.Container
+   *
+   * @method _handlePatchEvent
+   * @private
+   * @param  {Mixed} newValue - New value of the property
+   * @param  {Mixed} oldValue - Prior value of the property
+   * @param  {string[]} paths - Array of paths specifically modified: ['participants'], ['metadata.keyA', 'metadata.keyB']
+   */
+  _handlePatchEvent(newValue, oldValue, paths) {
+    // Certain types of __update handlers are disabled while values are being set by
+    // layer patch parser because the difference between setting a value (triggers an event)
+    // and change a property of a value (triggers only this callback) result in inconsistent
+    // behaviors.  Enable them long enough to allow __update calls to be made
+    this._inLayerParser = false;
+    try {
+      const events = this._disableEvents;
+      this._disableEvents = false;
+      if (paths[0].indexOf('metadata') === 0) {
+        this.__updateMetadata(newValue, oldValue, paths);
+      }
+      this._disableEvents = events;
+    } catch (err) {
+      // do nothing
+    }
+    this._inLayerParser = true;
   }
 
   /**

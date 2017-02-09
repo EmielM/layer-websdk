@@ -513,7 +513,7 @@ class Conversation extends Container {
     this._delete(queryStr);
   }
 
-    /**
+  /**
    * LayerPatch will call this after changing any properties.
    *
    * Trigger any cleanup or events needed after these changes.
