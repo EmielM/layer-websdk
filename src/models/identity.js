@@ -247,7 +247,7 @@ class Identity extends Syncable {
     });
   }
 
-  /**
+  /* JSDUCK DISABLED
    * Set the status of the current user.
    *
    * @method setStatus
@@ -464,7 +464,7 @@ Identity.BotType = 'bot';
  */
 Identity.prototype.type = Identity.UserType;
 
-/**
+/* JSDUCK DISABLED
  * Presence object contains presence information for this user.
  *
  * Properties of the sub-object are:
@@ -497,7 +497,7 @@ Object.defineProperty(Identity.prototype, 'isBot', {
   },
 });
 
-/**
+/* JSDUCK DISABLED
  * Possible values for layer.Identity.presence `status` field to be used in `setStatus()`
  *
  * * * `status`: has the following possible values:
