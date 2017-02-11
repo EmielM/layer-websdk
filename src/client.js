@@ -147,6 +147,7 @@ class Client extends ClientAuth {
     }
 
     if (this.socketManager) this.socketManager.close();
+    this._inCleanup = false;
   }
 
   destroy() {

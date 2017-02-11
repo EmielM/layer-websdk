@@ -198,13 +198,44 @@ describe("The Channel Class", function() {
         expect(channel.trigger).not.toHaveBeenCalled();
       });
 
-      it("Should trigger sent-error if not given a channel", function() {
+      it("Should trigger sent-error and mark it as NEW if not given a channel", function() {
         channel = new layer.Channel({client: client});
         spyOn(channel, "trigger");
         spyOn(channel, "_createSuccess");
         channel._createResultConflict({data: null});
         expect(channel.trigger).toHaveBeenCalledWith('channels:sent-error', {data: null});
         expect(channel._createSuccess).not.toHaveBeenCalled();
+        expect(channel.isNew()).toBe(true);
+      });
+    });
+
+    describe("The name property", function() {
+      it("Should be setable if new", function() {
+        channel = new layer.Channel({client: client});
+        channel.name = "fred";
+        expect(channel.name).toEqual("fred");
+      });
+
+      it("Should throw error if setting it when not new", function() {
+        channel = new layer.Channel({client: client});
+        channel.syncState = layer.Constants.SYNC_STATE.SYNCED;
+        expect(function() {
+          channel.name = "fred";
+        }).toThrowError(layer.LayerError.dictionary.permissionDenied);
+        expect(layer.LayerError.dictionary.permissionDenied).toEqual(jasmine.any(String));
+        expect(channel.name).not.toEqual("fred");
+      });
+
+      it("Should trigger change events when set", function() {
+        channel = new layer.Channel({client: client});
+        spyOn(channel, "_triggerAsync");
+
+        channel.name = "fred";
+        expect(channel._triggerAsync).toHaveBeenCalledWith('channels:change', {
+          property: 'name',
+          oldValue: null,
+          newValue: 'fred'
+        });
       });
     });
 
