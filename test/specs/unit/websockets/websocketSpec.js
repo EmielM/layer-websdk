@@ -808,8 +808,7 @@ describe("The Websocket Socket Manager Class", function() {
             var spy = jasmine.createSpy("callback");
             websocketManager.syncPresence(null, spy);
             expect(client.socketRequestManager.sendRequest).toHaveBeenCalledWith({
-                method: 'Presence.sync',
-                data: null
+                method: 'Presence.sync'
             }, spy, true);
         });
 

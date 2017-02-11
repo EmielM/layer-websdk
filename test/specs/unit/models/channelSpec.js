@@ -203,7 +203,7 @@ describe("The Channel Class", function() {
         spyOn(channel, "trigger");
         spyOn(channel, "_createSuccess");
         channel._createResultConflict({data: null});
-        expect(channel.trigger).toHaveBeenCalledWith('channels:sent-error', {data: null});
+        expect(channel.trigger).toHaveBeenCalledWith('channels:sent-error', {error: {data: null}});
         expect(channel._createSuccess).not.toHaveBeenCalled();
         expect(channel.isNew()).toBe(true);
       });
@@ -233,7 +233,7 @@ describe("The Channel Class", function() {
         channel.name = "fred";
         expect(channel._triggerAsync).toHaveBeenCalledWith('channels:change', {
           property: 'name',
-          oldValue: null,
+          oldValue: '',
           newValue: 'fred'
         });
       });

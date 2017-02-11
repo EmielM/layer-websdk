@@ -154,6 +154,8 @@ class Channel extends Container {
 
 
   _populateFromServer(channel) {
+    this._inPopulateFromServer = true;
+
     // Disable events if creating a new Conversation
     // We still want property change events for anything that DOES change
     this._disableEvents = (this.syncState === Constants.SYNC_STATE.NEW);
@@ -178,10 +180,12 @@ class Channel extends Container {
       this._syncCounter = 0;
       this.trigger('channels:sent-error', { error: data });
     }
+
+    this._inPopulateFromServer = false;
   }
 
   __adjustName(newValue) {
-    if (this._inLayerParser || this.isNew() || this.isLoading) return;
+    if (this._inPopulateFromServer || this._inLayerParser || this.isNew() || this.isLoading) return;
     throw new Error(LayerError.dictionary.permissionDenied);
   }
 
