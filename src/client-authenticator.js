@@ -629,9 +629,6 @@ class ClientAuthenticator extends Root {
   _clientReady() {
     if (!this.isReady) {
       this.isReady = true;
-      if (this.presenceEnabled && !this.user.presence.status) {
-        this.user.presence.setStatus(Identity.STATUS.AVAILABLE);
-      }
       this.trigger('ready');
     }
   }

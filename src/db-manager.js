@@ -408,9 +408,9 @@ class DbManager extends Root {
           email_address: identity.emailAddress,
           sync_state: identity.syncState,
           type: identity.type,
-          presence: {
-            status: identity.presence.status,
-            last_seen_at: identity.presence.lastSeenAt ? identity.presence.lastSeenAt.toISOString() : null,
+          _presence: {
+            status: identity._presence.status,
+            last_seen_at: identity.lastSeenAt ? identity.lastSeenAt.toISOString() : null,
           },
         };
       } else {

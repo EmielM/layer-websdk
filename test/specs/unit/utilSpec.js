@@ -473,17 +473,18 @@ describe("The Util Library", function() {
         });
 
         it("Should updated identity presence", function() {
-            expect(client.user.presence.status).not.toEqual("crazed and dazed");
+            expect(client.user._presence.status).not.toEqual("crazed and dazed");
             layer.Util.layerParse({
                 client: client,
                 object: client.user,
+                type: "Identity",
                 operations: [
                     {operation: "set", property: "presence.status", value: "crazed and dazed"}
                 ]
             });
 
             // Posttest
-            expect(client.user.presence.status).toEqual("crazed and dazed");
+            expect(client.user.status).toEqual("crazed and dazed");
         });
     });
 

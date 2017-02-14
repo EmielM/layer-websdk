@@ -514,11 +514,22 @@ describe("The Websocket Socket Manager Class", function() {
            websocketManager.getCounter();
 
            // Posttest
-           expect(client.socketRequestManager.sendRequest.calls.count()).toEqual(1);
+           var presenceSyncCount = client.socketRequestManager.sendRequest.calls.allArgs().filter(function(request) {
+               return request[0].method === "Presence.sync";
+            }).length;
+           expect(presenceSyncCount).toEqual(0);
+
            jasmine.clock().tick(1000);
-           expect(client.socketRequestManager.sendRequest.calls.count()).toEqual(2);
+           presenceSyncCount = client.socketRequestManager.sendRequest.calls.allArgs().filter(function(request) {
+               return request[0].method === "Presence.sync";
+            }).length;
+           expect(presenceSyncCount).toEqual(1);
+
            jasmine.clock().tick(10000);
-           expect(client.socketRequestManager.sendRequest.calls.count()).toEqual(2);
+           presenceSyncCount = client.socketRequestManager.sendRequest.calls.allArgs().filter(function(request) {
+               return request[0].method === "Presence.sync";
+            }).length;
+           expect(presenceSyncCount).toEqual(1);
        });
     });
 
@@ -553,18 +564,18 @@ describe("The Websocket Socket Manager Class", function() {
             expect(websocketManager._replayEvents).toHaveBeenCalledWith(timestamp, jasmine.any(Function));
         });
 
-        it("Should call _replayPresence", function() {
-            spyOn(websocketManager, "_replayPresence")
+        it("Should call _enablePresence", function() {
+            spyOn(websocketManager, "_enablePresence")
             spyOn(websocketManager, "_replayEvents").and.callFake(function(timestamp, callback) {
                 callback();
             });
             websocketManager.resync(timestamp);
-            expect(websocketManager._replayPresence).toHaveBeenCalledWith(timestamp, jasmine.any(Function));
+            expect(websocketManager._enablePresence).toHaveBeenCalledWith(timestamp, jasmine.any(Function));
         });
 
         it("Should trigger 'synced'", function() {
             spyOn(websocketManager, "trigger");
-            spyOn(websocketManager, "_replayPresence").and.callFake(function(timestamp, callback) {
+            spyOn(websocketManager, "_enablePresence").and.callFake(function(timestamp, callback) {
                 callback();
             });
             spyOn(websocketManager, "_replayEvents").and.callFake(function(timestamp, callback) {
@@ -598,7 +609,7 @@ describe("The Websocket Socket Manager Class", function() {
                 }
             });
 
-            // Handle the call to _replayPresence
+            // Handle the call to _enablePresence
             Object.keys(requests).forEach(function(key) {
                 request = requests[key];
                 requestId = key;
@@ -801,44 +812,12 @@ describe("The Websocket Socket Manager Class", function() {
                 data: response.data.body.data
             });
         });
-
-        it("Should call Presence.sync without a timestamp", function() {
-            var d = new Date();
-            spyOn(client.socketRequestManager, "sendRequest");
-            var spy = jasmine.createSpy("callback");
-            websocketManager.syncPresence(null, spy);
-            expect(client.socketRequestManager.sendRequest).toHaveBeenCalledWith({
-                method: 'Presence.sync'
-            }, spy, true);
-        });
-
-        it("Should call callback if invoked without a timestamp", function() {
-            var d = new Date();
-            var spy = jasmine.createSpy("callback");
-            var request = websocketManager.syncPresence(null, spy);
-            var response = {
-                data: {
-                    body: {
-                        success: true,
-                        data: {
-                            changes: []
-                        }
-                    }
-                }
-            };
-            client.socketRequestManager._processResponse(request.request_id, response);
-            expect(spy).toHaveBeenCalledWith({
-                success: true,
-                fullData: response.data,
-                data: response.data.body.data
-            });
-        });
     });
 
-    describe("The _replayPresence() method", function() {
+    describe("The _enablePresence() method", function() {
         it("Should subscribe to presence", function() {
             spyOn(client.socketRequestManager, "sendRequest");
-            websocketManager._replayPresence();
+            websocketManager._enablePresence();
             expect(client.socketRequestManager.sendRequest).toHaveBeenCalledWith({
                 method: 'Presence.subscribe'
             });
@@ -846,7 +825,7 @@ describe("The Websocket Socket Manager Class", function() {
 
         it("Should send auto status", function() {
             spyOn(client.socketRequestManager, "sendRequest");
-            websocketManager._replayPresence();
+            websocketManager._enablePresence();
             expect(client.socketRequestManager.sendRequest).toHaveBeenCalledWith({
                 method: 'Presence.update',
                 data: [
@@ -856,7 +835,7 @@ describe("The Websocket Socket Manager Class", function() {
 
             client.socketRequestManager.sendRequest.calls.reset();
             client.presenceEnabled = false;
-            websocketManager._replayPresence();
+            websocketManager._enablePresence();
             expect(client.socketRequestManager.sendRequest).not.toHaveBeenCalledWith({
                 method: 'Presence.update',
                 data: [
@@ -869,12 +848,12 @@ describe("The Websocket Socket Manager Class", function() {
             spyOn(websocketManager, "syncPresence");
             var time = new Date().toISOString();
             var spy = jasmine.createSpy('callback');
-            websocketManager._replayPresence(time, spy);
+            websocketManager._enablePresence(time, spy);
             expect(websocketManager.syncPresence).toHaveBeenCalledWith(time, spy);
 
             websocketManager.syncPresence.calls.reset();
-            websocketManager._replayPresence(null, spy);
-            expect(websocketManager.syncPresence).toHaveBeenCalledWith(null, spy);
+            websocketManager._enablePresence(null, spy);
+            expect(websocketManager.syncPresence).not.toHaveBeenCalled();
         });
     });
 

@@ -211,7 +211,7 @@ class SocketManager extends Root {
       if (this._hasCounter && this._lastTimestamp) {
         this.resync(this._lastTimestamp);
       } else {
-        this._replayPresence();
+        this._enablePresence();
         this._reschedulePing();
       }
     }
@@ -337,7 +337,7 @@ class SocketManager extends Root {
     this.client.socketRequestManager.cancelOperation('Event.replay');
     this.client.socketRequestManager.cancelOperation('Presence.sync');
     this._replayEvents(timestamp, () => {
-      this._replayPresence(timestamp, () => {
+      this._enablePresence(timestamp, () => {
         this.trigger('synced');
         if (callback) callback();
       });
@@ -414,12 +414,12 @@ class SocketManager extends Root {
   /**
    * Resubscribe to presence and replay missed presence changes.
    *
-   * @method _replayPresence
+   * @method _enablePresence
    * @private
    * @param  {Date}     timestamp
    * @param  {Function} callback
    */
-  _replayPresence(timestamp, callback) {
+  _enablePresence(timestamp, callback) {
     if (this.client.presenceEnabled) {
       this.client.socketRequestManager.sendRequest({
         method: 'Presence.update',
@@ -432,31 +432,32 @@ class SocketManager extends Root {
       method: 'Presence.subscribe',
     });
 
-    this.syncPresence(timestamp, callback);
+    if (timestamp) {
+      this.syncPresence(timestamp, callback);
+    } else if (callback) {
+      callback({ success: true });
+    }
   }
 
   /**
    * Synchronize all presence data or catch up on missed presence data.
    *
-   * Typically this is called by layer.Websockets.SocketManager._replayPresence automatically,
+   * Typically this is called by layer.Websockets.SocketManager._enablePresence automatically,
    * but there may be occasions where an app wants to directly trigger this action.
    *
    * @method syncPresence
-   * @param {String} [timestamp]    `Date.toISOString()` formatted string, returns all presence changes since that timestamp.  Returns all followed presence
+   * @param {String} timestamp    `Date.toISOString()` formatted string, returns all presence changes since that timestamp.  Returns all followed presence
    *       if no timestamp is provided.
    * @param {Function} [callback]   Function to call when sync is completed.
    */
   syncPresence(timestamp, callback) {
     if (timestamp) {
+      // Return value for use in unit tests
       return this.client.socketRequestManager.sendRequest({
         method: 'Presence.sync',
         data: {
           since: timestamp,
         },
-      }, callback, true);
-    } else {
-      return this.client.socketRequestManager.sendRequest({
-        method: 'Presence.sync',
       }, callback, true);
     }
   }

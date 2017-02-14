@@ -82,10 +82,6 @@ function deleteTables(done) {
           publicKey: "public",
           avatarUrl: "avatar",
           displayName: "display",
-          presence: {
-            status: 'away',
-            lastSeenAt: null
-          },
           syncState: layer.Constants.SYNC_STATE.SYNCED,
           isFullIdentity: true
         });
@@ -181,16 +177,19 @@ function deleteTables(done) {
 
         it("Should always initialize the presence object", function() {
           var i1 = new layer.Identity({client: client});
-          expect(i1.presence).toEqual({
-            status: 'offline',
+          expect(i1._presence).toEqual({
+            status: null,
             lastSeenAt: null
           });
 
           var i2 = layer.Identity._createFromServer(responses.useridentity, client);
-          expect(i2.presence).toEqual({
-            status: 'away',
-            lastSeenAt: new Date(responses.useridentity.presence.last_seen_at)
+          expect(i2._presence).toEqual({
+            status: null,
+            lastSeenAt: null
           });
+
+          expect(i1.status).toEqual('offline');
+          expect(i2.status).toEqual('offline');
         });
       });
 
@@ -220,11 +219,7 @@ function deleteTables(done) {
             metadata: {hey: "ho"},
             public_key: "h",
             user_id: "i",
-            id: "layer:///identities/i",
-            presence: {
-              status: "AWAY",
-              last_seen_at: "2010-01-01"
-            }
+            id: "layer:///identities/i"
           });
           expect(identity.displayName).toEqual("a");
           expect(identity.firstName).toEqual("b");
@@ -234,10 +229,6 @@ function deleteTables(done) {
           expect(identity.metadata).toEqual({hey: "ho"});
           expect(identity.publicKey).toEqual("h");
           expect(identity.userId).toEqual("i");
-          expect(identity.presence).toEqual({
-            status: "AWAY",
-            lastSeenAt: new Date("2010-01-01")
-          });
         });
 
         it("Should trigger change events for changed properties", function() {
@@ -255,10 +246,6 @@ function deleteTables(done) {
             metadata: {hey: "ho"},
             public_key: "h",
             user_id: "i",
-            presence: {
-              status: 'away',
-              last_seen_at: lastSeenAt.toISOString(),
-            },
             id: "layer:///identities/i"
           });
           expect(identity._triggerAsync).toHaveBeenCalledWith("identities:change", {
@@ -291,17 +278,7 @@ function deleteTables(done) {
             oldValue: '',
             newValue: 'h'
           });
-          expect(identity._triggerAsync).toHaveBeenCalledWith("identities:change", {
-            property: "presence.status",
-            oldValue: 'offline',
-            newValue: 'away'
-          });
-          expect(identity._triggerAsync).toHaveBeenCalledWith("identities:change", {
-            property: "presence.lastSeenAt",
-            oldValue: null,
-            newValue: lastSeenAt
-          });
-          expect(identity._triggerAsync.calls.count()).toEqual(8);
+          expect(identity._triggerAsync.calls.count()).toEqual(6);
         });
 
         it("Should set isFullIdentity to true", function() {
@@ -417,44 +394,26 @@ function deleteTables(done) {
           jasmine.clock().tick(101);
           expect(client.dbManager.getObjects).not.toHaveBeenCalled();
         });
-
-        it("Should set status to offline if no presence data", function() {
-          identity.presence.status = 'available';
-
-          // Run
-          identity._populateFromServer({
-            display_name: "a",
-            first_name: "b",
-            last_name: "c",
-            phone_number: "d",
-            email_address: "e",
-            metadata: {hey: "ho"},
-            public_key: "h",
-            user_id: "i",
-            id: "layer:///identities/i"
-          });
-          expect(identity.presence.status).toEqual('offline');
-        });
       });
 
       describe("The _handlePatchEvent", function() {
         it("Should update lastSeenAt and status and trigger change events", function() {
           spyOn(identity, "_triggerAsync");
-          identity.presence.status = 'available';
-          identity.presence.last_seen_at = new Date('2020-01-01');
+          identity._presence.status = 'available';
+          identity._presence.last_seen_at = new Date('2020-01-01');
           identity._handlePatchEvent(
             {status: "available", last_seen_at: "2010-01-01"},
             {status: "away", lastSeenAt: new Date("2020-01-01")},
             ['presence.status', 'presence.last_seen_at']);
-            expect(identity.presence.status).toEqual('available'); // not updated
-            expect(identity.presence.lastSeenAt.toISOString().substring(0, 10)).toEqual('2010-01-01'); // updated
+            expect(identity._presence.status).toEqual('available'); // not updated
+            expect(identity._presence.lastSeenAt.toISOString().substring(0, 10)).toEqual('2010-01-01'); // updated
           expect(identity._triggerAsync).toHaveBeenCalledWith('identities:change', {
-            property: 'presence.status',
+            property: 'status',
             oldValue: 'away',
             newValue: 'available'
           });
           expect(identity._triggerAsync).toHaveBeenCalledWith('identities:change', {
-            property: 'presence.lastSeenAt',
+            property: 'lastSeenAt',
             oldValue: new Date('2020-01-01'),
             newValue: new Date('2010-01-01')
           });
@@ -493,22 +452,22 @@ function deleteTables(done) {
         });
 
         it("call _updateValue with the new status", function() {
-          expect(client.user.presence.status).not.toEqual("AWAY");
+          expect(client.user._presence.status).not.toEqual("AWAY");
           spyOn(client.user, "_updateValue").and.callThrough();;
           client.user.setStatus("AWAY");
-          expect(client.user._updateValue).toHaveBeenCalledWith(['presence', 'status'], 'away');
-          expect(client.user.presence.status).toEqual("away");
+          expect(client.user._updateValue).toHaveBeenCalledWith(['_presence', 'status'], 'away');
+          expect(client.user._presence.status).toEqual("away");
         });
 
         it("Should roll back the value on server error", function() {
-          client.user.presence.status = "available";
+          client.user._presence.status = "available";
           spyOn(client.user, "_updateValue").and.callThrough();;
           spyOn(client, "sendSocketRequest").and.callFake(function(args, callback) {
             callback({success: false});
           });
 
           client.user.setStatus("AWAY");
-          expect(client.user._updateValue).toHaveBeenCalledWith(['presence', 'status'], 'available');
+          expect(client.user._updateValue).toHaveBeenCalledWith(['_presence', 'status'], 'available');
         });
       });
 
@@ -602,11 +561,12 @@ function deleteTables(done) {
         });
 
         it("Should update an embedded value", function() {
+          identity._presence.status = 'away';
           spyOn(identity, '_triggerAsync');
-          identity._updateValue(['presence', 'status'], 'annoyed');
-          expect(identity.presence.status).toEqual('annoyed');
+          identity._updateValue(['_presence', 'status'], 'annoyed');
+          expect(identity._presence.status).toEqual('annoyed');
           expect(identity._triggerAsync).toHaveBeenCalledWith('identities:change', {
-            property: 'presence.status',
+            property: 'status',
             oldValue: 'away',
             newValue: 'annoyed'
           });

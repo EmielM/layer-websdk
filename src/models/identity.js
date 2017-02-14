@@ -51,18 +51,18 @@ class Identity extends Syncable {
 
     this.isInitializing = true;
 
+    if (!this._presence) {
+      this._presence = {
+        status: null,
+        lastSeenAt: null,
+      };
+    }
+
     // If the options contains a full server definition of the object,
     // copy it in with _populateFromServer; this will add the Identity
     // to the Client as well.
     if (options && options.fromServer) {
       this._populateFromServer(options.fromServer);
-    }
-
-    if (!this.presence) {
-      this.presence = {
-        status: Identity.STATUS.OFFLINE,
-        lastSeenAt: null,
-      };
     }
 
     if (!this.url && this.id) {
@@ -73,7 +73,7 @@ class Identity extends Syncable {
     this.getClient()._addIdentity(this);
 
     this.getClient().on('online', (evt) => {
-      if (!evt.isOnline) this._updateValue(['presence', 'status'], Identity.STATUS.OFFLINE);
+      if (!evt.isOnline) this._updateValue(['_presence', 'status'], Identity.STATUS.OFFLINE);
     }, this);
 
     this.isInitializing = false;
@@ -131,9 +131,6 @@ class Identity extends Syncable {
       this._updateValue(['metadata'], identity.metadata);
       this._updateValue(['publicKey'], identity.public_key);
       this._updateValue(['phoneNumber'], identity.phone_number);
-      if (!this.presence) this.presence = { status: null, lastSeenAt: null };
-      this._updateValue(['presence', 'status'], identity.presence ? identity.presence.status : Identity.STATUS.OFFLINE);
-      this._updateValue(['presence', 'lastSeenAt'], identity.presence && identity.presence.last_seen_at ? new Date(identity.presence.last_seen_at) : null);
       this.isFullIdentity = true;
     }
 
@@ -169,6 +166,7 @@ class Identity extends Syncable {
 
     if (pointer[lastKey] !== value) {
       if (!this.isInitializing) {
+        if (keys[0] === '_presence') keys = [keys[1]];
         this._triggerAsync('identities:change', {
           property: keys.join('.'),
           oldValue: pointer[lastKey],
@@ -194,15 +192,18 @@ class Identity extends Syncable {
       let newValue = newValueIn,
         oldValue = oldValueIn;
       if (path === 'presence.last_seen_at') {
-        this.presence.lastSeenAt = new Date(newValue.last_seen_at);
-        newValue = this.presence.lastSeenAt;
+        this._presence.lastSeenAt = new Date(newValue.last_seen_at);
+        newValue = this._presence.lastSeenAt;
         oldValue = oldValue.lastSeenAt;
-        delete this.presence.last_seen_at; // Flaw in layer-patch assumes that subproperties don't get camel cased (correct assumption for `recipient_status` and `metadata`)
+        delete this._presence.last_seen_at; // Flaw in layer-patch assumes that subproperties don't get camel cased (correct assumption for `recipient_status` and `metadata`)
       } else if (path === 'presence.status') {
-        newValue = this.presence.status;
+        newValue = this._presence.status;
         oldValue = oldValue.status;
       }
-      const property = path.replace(/_(.)/g, (match, value) => value.toUpperCase());
+      const property = path
+        .replace(/_(.)/g, (match, value) => value.toUpperCase())
+        .replace(/^presence\./, '');
+
       this._triggerAsync('identities:change', {
         property,
         oldValue,
@@ -247,7 +248,7 @@ class Identity extends Syncable {
     });
   }
 
-  /* JSDUCK DISABLED
+  /**
    * Set the status of the current user.
    *
    * @method setStatus
@@ -259,7 +260,7 @@ class Identity extends Syncable {
     if (!Identity.STATUS[status.toUpperCase()]) throw new Error(LayerError.dictionary.valueNotSupported);
     if (this !== this.getClient().user) throw new Error(LayerError.dictionary.permissionDenied);
 
-    const oldValue = this.presence.status;
+    const oldValue = this._presence.status;
     this.getClient().sendSocketRequest({
       method: 'PATCH',
       body: {
@@ -273,9 +274,9 @@ class Identity extends Syncable {
         target: this.id,
       },
     }, (result) => {
-      if (!result.success) this._updateValue(['presence', 'status'], oldValue);
+      if (!result.success) this._updateValue(['_presence', 'status'], oldValue);
     });
-    this._updateValue(['presence', 'status'], status);
+    this._updateValue(['_presence', 'status'], status);
   }
 
  /**
@@ -464,7 +465,7 @@ Identity.BotType = 'bot';
  */
 Identity.prototype.type = Identity.UserType;
 
-/* JSDUCK DISABLED
+/**
  * Presence object contains presence information for this user.
  *
  * Properties of the sub-object are:
@@ -478,17 +479,62 @@ Identity.prototype.type = Identity.UserType;
  *    that they have deliberately set their status to `offline` but are still connected.
  * * `lastSeenAt`: Approximate time that the user was last known to be connected (and not `invisible`)
  *
- * @property {Object} presence
- * @property {String} presence.status
- * @property {Date} presence.lastSeenAt
+ * @property {Object} _presence
+ * @property {String} _presence.status
+ * @property {Date} _presence.lastSeenAt
+ * @private
  */
-Identity.prototype.presence = null;
+Identity.prototype._presence = null;
+
+/**
+ * The user's current status or availability.
+ *
+ * Value is one of:
+ *
+ * * `layer.Identity.STATUS.AVAILABLE`: User has set their status to `available`.  This is the default initial state
+ * * `layer.Identity.STATUS.AWAY`: App or User has changed their status to `away`
+ * * `layer.Identity.STATUS.BUSY`: App or User has changed their status to `busy`
+ * * `layer.Identity.STATUS.OFFLINE`: User is not connected or has set their status to `offline`
+ * * `layer.Identity.STATUS.INVISIBLE`: When a user has set their status to `offline` they instead see a status of `invisible` so that they know
+ *    that they have deliberately set their status to `offline` but are still connected.
+ *
+ * This property can only be set on the session owner's identity, not on other identities via:
+ *
+ * ```
+ * client.user.setStatus(layer.Identity.STATUS.AVAILABLE);
+ * ```
+ *
+ * @property {String} status
+ * @readonly
+ */
+Object.defineProperty(Identity.prototype, 'status', {
+  enumerable: true,
+  get: function get() {
+    return (this._presence && this._presence.status) || Identity.STATUS.OFFLINE;
+  },
+});
+
+/**
+ * Time that the user was last known to be online.
+ *
+ * Accurate to within about 15 minutes.  User's who are online, but set their status
+ * to `layer.Identity.STATUS.INVISIBLE` will not have their `lastSeenAt` value updated.
+ *
+ * @property {Date} lastSeenAt
+ * @readonly
+ */
+Object.defineProperty(Identity.prototype, 'lastSeenAt', {
+  enumerable: true,
+  get: function get() {
+    return this._presence && this._presence.lastSeenAt;
+  },
+});
 
 /**
  * Is this Identity a bot?
  *
  * If the layer.Identity.type field is equal to layer.Identity.BotType then this will return true.
- * @type {boolean}
+ * @property {boolean} isBot
  */
 Object.defineProperty(Identity.prototype, 'isBot', {
   enumerable: true,
@@ -497,19 +543,16 @@ Object.defineProperty(Identity.prototype, 'isBot', {
   },
 });
 
-/* JSDUCK DISABLED
- * Possible values for layer.Identity.presence `status` field to be used in `setStatus()`
- *
- * * * `status`: has the following possible values:
- * ** `available`: User has set their status to `available`.  This is the default initial state
- * ** `away`: App or User has changed their status to `away`
- * ** `busy`: App or User has changed their status to `busy`
- * ** `offline`: User is not connected or has set their status to `offline`
- * ** `invisible`: When a user has set their status to `offline` they instead see a status of `invisible` so that they know
- *    that they have deliberately set their status to `offline` but are still connected.
- * * `lastSeenAt`: Approximate time that the user was last known to be connected (and not `invisible`)
+/**
+ * Possible values for layer.Identity.status field to be used in `setStatus()`
  *
  * @property {Object} STATUS
+ * @property {String} STATUS.AVAILABLE   User has set their status to `available`.  This is the default initial state
+ * @property {String} STATUS.AWAY        App or User has changed their status to `away`
+ * @property {String} STATUS.BUSY     App or User has changed their status to `busy`
+ * @property {String} STATUS.OFFLINE  User is not connected or has set their status to `offline`
+ * @property {String} STATUS.INVISIBLE  When a user has set their status to `offline` they instead see a status of `invisible` so that they know
+ *    that they have deliberately set their status to `offline` but are still connected.
  * @static
  */
 Identity.STATUS = {

@@ -377,6 +377,9 @@ function createParser(request) {
       Conversation: {
         unreadMessageCount: 'unreadCount',
       },
+      Identity: {
+        presence: '_presence',
+      },
     },
     changeCallbacks: {
       Message: {

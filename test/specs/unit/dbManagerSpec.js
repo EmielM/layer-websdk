@@ -903,9 +903,9 @@ var dbIt = it;
           phone_number: identity.phoneNumber,
           sync_state: identity.syncState,
           type: layer.Identity.UserType,
-          presence: {
-            status: identity.presence.status,
-            last_seen_at: identity.presence.lastSeenAt.toISOString()
+          _presence: {
+            status: identity._presence.status,
+            last_seen_at: null
           }
         }]);
       });
