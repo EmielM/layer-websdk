@@ -276,7 +276,7 @@ class SyncManager extends Root {
         requestEvt.toObject());
       requestEvt.isFiring = true;
       this.requestManager.sendRequest(requestEvt._getRequestData(this.client),
-          result => this._xhrResult(result, requestEvt));
+          result => this._xhrResult(result, requestEvt), requestEvt.returnChangesArray);
     } else {
       logger.debug('Sync Manager Websocket Request skipped; socket closed');
     }

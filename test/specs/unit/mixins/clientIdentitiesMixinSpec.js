@@ -301,6 +301,7 @@ describe("The Client Identities Mixin", function() {
         client._loadPresence();
         expect(client.syncManager.request).toHaveBeenCalledWith(jasmine.any(layer.WebsocketSyncEvent));
         var syncEvent = client.syncManager.request.calls.allArgs()[0][0];
+        expect(syncEvent.returnChangesArray).toBe(true);
         expect(syncEvent.data).toEqual({
             method: 'Presence.sync',
             data: {

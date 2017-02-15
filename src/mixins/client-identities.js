@@ -271,6 +271,7 @@ module.exports = {
           method: 'Presence.sync',
           data: { ids },
         },
+        returnChangesArray: true,
         operation: 'READ',
         target: null,
         depends: [],
