@@ -448,7 +448,8 @@ function deleteTables(done) {
               depends: [client.user.id],
               target: client.user.id
             }
-          }, jasmine.any(Function));
+          },
+          jasmine.any(Function));
         });
 
         it("call _updateValue with the new status", function() {
@@ -468,6 +469,42 @@ function deleteTables(done) {
 
           client.user.setStatus("AWAY");
           expect(client.user._updateValue).toHaveBeenCalledWith(['_presence', 'status'], 'available');
+        });
+
+        it("Should send offline and set invisible if setting to invisible", function() {
+          client.user._presence.status = "available";
+          spyOn(client, "sendSocketRequest")
+          client.user.setStatus(layer.Identity.STATUS.INVISIBLE);
+          expect(client.user.status).toEqual(layer.Identity.STATUS.INVISIBLE);
+          expect(client.sendSocketRequest).toHaveBeenCalledWith({
+            method: 'PATCH',
+            body: {
+              method: 'Presence.update',
+              data: [{operation: 'set', property: 'status', value: 'offline'}]
+            },
+            sync: {
+              depends: [client.user.id],
+              target: client.user.id
+            }
+          }, jasmine.any(Function));
+        });
+
+        it("Should send offline and set invisible if setting to offline", function() {
+          client.user._presence.status = "available";
+          spyOn(client, "sendSocketRequest")
+          client.user.setStatus(layer.Identity.STATUS.OFFLINE);
+          expect(client.user.status).toEqual(layer.Identity.STATUS.INVISIBLE);
+          expect(client.sendSocketRequest).toHaveBeenCalledWith({
+            method: 'PATCH',
+            body: {
+              method: 'Presence.update',
+              data: [{operation: 'set', property: 'status', value: 'offline'}]
+            },
+            sync: {
+              depends: [client.user.id],
+              target: client.user.id
+            }
+          }, jasmine.any(Function));
         });
       });
 

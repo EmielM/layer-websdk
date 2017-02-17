@@ -308,16 +308,20 @@ class SocketManager extends Root {
 
     logger.debug('Websocket request: getCounter');
     this.client.socketRequestManager.sendRequest({
-      method: 'Counter.read',
-    }, (result) => {
-      logger.debug('Websocket response: getCounter ' + result.data.counter);
-      if (callback) {
-        if (result.success) {
-          callback(true, result.data.counter, result.fullData.counter);
-        } else {
-          callback(false);
+      data: {
+        method: 'Counter.read',
+      },
+      callback: (result) => {
+        logger.debug('Websocket response: getCounter ' + result.data.counter);
+        if (callback) {
+          if (result.success) {
+            callback(true, result.data.counter, result.fullData.counter);
+          } else {
+            callback(false);
+          }
         }
-      }
+      },
+      isChangesArray: false,
     });
   }
 
@@ -360,11 +364,15 @@ class SocketManager extends Root {
     } else {
       logger.info('Websocket request: _replayEvents');
       this.client.socketRequestManager.sendRequest({
-        method: 'Event.replay',
         data: {
-          from_timestamp: timestamp,
+          method: 'Event.replay',
+          data: {
+            from_timestamp: timestamp,
+          },
         },
-      }, result => this._replayEventsComplete(timestamp, callback, result.success));
+        callback: result => this._replayEventsComplete(timestamp, callback, result.success),
+        isChangesArray: false,
+      });
     }
   }
 
@@ -422,14 +430,22 @@ class SocketManager extends Root {
   _enablePresence(timestamp, callback) {
     if (this.client.presenceEnabled) {
       this.client.socketRequestManager.sendRequest({
-        method: 'Presence.update',
-        data: [
-          { operation: 'set', property: 'status', value: 'auto' },
-        ],
+        data: {
+          method: 'Presence.update',
+          data: [
+            { operation: 'set', property: 'status', value: 'auto' },
+          ],
+        },
+        callback: null,
+        isChangesArray: false,
       });
     }
     this.client.socketRequestManager.sendRequest({
-      method: 'Presence.subscribe',
+      data: {
+        method: 'Presence.subscribe',
+      },
+      callback: null,
+      isChangesArray: false,
     });
 
     if (timestamp) {
@@ -454,11 +470,15 @@ class SocketManager extends Root {
     if (timestamp) {
       // Return value for use in unit tests
       return this.client.socketRequestManager.sendRequest({
-        method: 'Presence.sync',
         data: {
-          since: timestamp,
+          method: 'Presence.sync',
+          data: {
+            since: timestamp,
+          },
         },
-      }, callback, true);
+        isChangesArray: true,
+        callback,
+      });
     }
   }
 

@@ -481,15 +481,19 @@ describe("The Websocket Socket Manager Class", function() {
             spyOn(client.socketRequestManager, "sendRequest");
             websocketManager.getCounter();
             expect(client.socketRequestManager.sendRequest).toHaveBeenCalledWith({
-                method: "Counter.read"
-            }, jasmine.any(Function));
+                data: {
+                    method: "Counter.read"
+                },
+                callback: jasmine.any(Function),
+                isChangesArray: false
+            });
         });
 
 
         it("Should call the callback", function() {
             var spy = jasmine.createSpy('spy');
-            spyOn(client.socketRequestManager, "sendRequest").and.callFake(function(body, callback) {
-                callback({
+            spyOn(client.socketRequestManager, "sendRequest").and.callFake(function(options) {
+                options.callback({
                     success: true,
                     data: {counter: 5},
                     fullData: {counter: 4, data: {counter: 5}}
@@ -515,19 +519,19 @@ describe("The Websocket Socket Manager Class", function() {
 
            // Posttest
            var presenceSyncCount = client.socketRequestManager.sendRequest.calls.allArgs().filter(function(request) {
-               return request[0].method === "Presence.sync";
+               return request[0].data.method === "Presence.sync";
             }).length;
            expect(presenceSyncCount).toEqual(0);
 
            jasmine.clock().tick(1000);
            presenceSyncCount = client.socketRequestManager.sendRequest.calls.allArgs().filter(function(request) {
-               return request[0].method === "Presence.sync";
+               return request[0].data.method === "Presence.sync";
             }).length;
            expect(presenceSyncCount).toEqual(1);
 
            jasmine.clock().tick(10000);
            presenceSyncCount = client.socketRequestManager.sendRequest.calls.allArgs().filter(function(request) {
-               return request[0].method === "Presence.sync";
+               return request[0].data.method === "Presence.sync";
             }).length;
            expect(presenceSyncCount).toEqual(1);
        });
@@ -671,11 +675,15 @@ describe("The Websocket Socket Manager Class", function() {
             spyOn(client.socketRequestManager, "sendRequest");
             websocketManager._replayEvents(timestamp, true);
             expect(client.socketRequestManager.sendRequest).toHaveBeenCalledWith({
-                method: 'Event.replay',
                 data: {
-                    from_timestamp: timestamp
-                }
-            }, jasmine.any(Function));
+                    method: 'Event.replay',
+                    data: {
+                        from_timestamp: timestamp
+                    }
+                },
+                callback: jasmine.any(Function),
+                isChangesArray: false
+            });
         });
 
         it("Should call sendRequest", function() {
@@ -684,16 +692,20 @@ describe("The Websocket Socket Manager Class", function() {
             websocketManager._inReplay = false;
             websocketManager._replayEvents(timestamp.toISOString());
             expect(client.socketRequestManager.sendRequest).toHaveBeenCalledWith({
-                method: "Event.replay",
-                data: {from_timestamp: timestamp.toISOString()}
-            }, jasmine.any(Function));
+                data: {
+                    method: "Event.replay",
+                    data: {from_timestamp: timestamp.toISOString()}
+                },
+                callback: jasmine.any(Function),
+                isChangesArray: false
+            });
         });
 
         it("Should call _replayEventsComplete", function() {
             spyOn(websocketManager, "_isOpen").and.returnValue(true);
             var spy = jasmine.createSpy('callback');
-            spyOn(client.socketRequestManager, "sendRequest").and.callFake(function(body, callback) {
-                callback({success: true});
+            spyOn(client.socketRequestManager, "sendRequest").and.callFake(function(request) {
+                request.callback({success: true});
             });
             spyOn(websocketManager, "_replayEventsComplete");
             websocketManager._inReplay = false;
@@ -784,11 +796,15 @@ describe("The Websocket Socket Manager Class", function() {
             spyOn(client.socketRequestManager, "sendRequest");
             websocketManager.syncPresence(d.toISOString(), spy);
             expect(client.socketRequestManager.sendRequest).toHaveBeenCalledWith({
-                method: 'Presence.sync',
                 data: {
-                    since: d.toISOString(),
+                    method: 'Presence.sync',
+                    data: {
+                        since: d.toISOString(),
+                    },
                 },
-            }, spy, true);
+                callback: spy,
+                isChangesArray: true
+            });
         });
 
         it("Should call callback if invoked with your timestamp", function() {
@@ -819,7 +835,11 @@ describe("The Websocket Socket Manager Class", function() {
             spyOn(client.socketRequestManager, "sendRequest");
             websocketManager._enablePresence();
             expect(client.socketRequestManager.sendRequest).toHaveBeenCalledWith({
-                method: 'Presence.subscribe'
+                data: {
+                    method: 'Presence.subscribe'
+                },
+                callback: null,
+                isChangesArray: false
             });
         });
 
@@ -827,20 +847,28 @@ describe("The Websocket Socket Manager Class", function() {
             spyOn(client.socketRequestManager, "sendRequest");
             websocketManager._enablePresence();
             expect(client.socketRequestManager.sendRequest).toHaveBeenCalledWith({
-                method: 'Presence.update',
-                data: [
-                    { operation: 'set', property: 'status', value: 'auto' },
-                ],
+                data: {
+                    method: 'Presence.update',
+                    data: [
+                        { operation: 'set', property: 'status', value: 'auto' },
+                    ]
+                },
+                callback: null,
+                isChangesArray: false
             });
 
             client.socketRequestManager.sendRequest.calls.reset();
             client.presenceEnabled = false;
             websocketManager._enablePresence();
             expect(client.socketRequestManager.sendRequest).not.toHaveBeenCalledWith({
-                method: 'Presence.update',
-                data: [
-                    { operation: 'set', property: 'status', value: 'auto' },
-                ],
+                data: {
+                    method: 'Presence.update',
+                    data: [
+                        { operation: 'set', property: 'status', value: 'auto' },
+                    ],
+                },
+                callback: null,
+                isChangesArray: false
             });
         });
 

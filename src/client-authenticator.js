@@ -831,24 +831,28 @@ class ClientAuthenticator extends Root {
 
 
   /* COMMUNICATIONS METHODS BEGIN */
-  sendSocketRequest(params, callback) {
-    if (params.sync) {
-      const target = params.sync.target;
-      let depends = params.sync.depends;
+  sendSocketRequest(data, callback) {
+    const isChangesArray = Boolean(data.isChangesArray);
+
+    if (data.sync) {
+      const target = data.sync.target;
+      let depends = data.sync.depends;
       if (target && !depends) depends = [target];
 
       this.syncManager.request(new WebsocketSyncEvent({
-        data: params.body,
-        operation: params.method,
+        data: data.body,
+        operation: data.method,
+        returnChangesArray: isChangesArray,
         target,
         depends,
         callback,
       }));
     } else {
-      if (typeof params.data === 'function') params.data = params.data();
-      this.socketRequestManager.sendRequest(params, callback);
+      if (typeof data.data === 'function') data.data = data.data();
+      this.socketRequestManager.sendRequest({ data, isChangesArray, callback });
     }
   }
+
 
   /**
    * This event handler receives events from the Online State Manager and generates an event for those subscribed

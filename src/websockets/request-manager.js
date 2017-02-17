@@ -130,20 +130,25 @@ class WebsocketRequestManager {
    * Shortcut for sending a request; builds in handling for callbacks
    *
    *    manager.sendRequest({
-   *      operation: "delete",
-   *      object: {id: "layer:///conversations/uuid"},
-   *      data: {deletion_mode: "all_participants"}
-   *    }, function(result) {
+   *      data: {
+   *        operation: "delete",
+   *        object: {id: "layer:///conversations/uuid"},
+   *        data: {deletion_mode: "all_participants"}
+   *      },
+   *      callback: function(result) {
    *        alert(result.success ? "Yay" : "Boo");
+   *      },
+   *      isChangesArray: false
    *    });
    *
    * @method sendRequest
-   * @param  {Object} data                    Data to send to the server
-   * @param  {Function} [callback=null]       Handler for success/failure callback
-   * @param  {Boolean} [isChangesArray=false] Response contains a changes array that can be fed directly to change-manager.
+   * @param  {Object} options
+   * @param  {Object} otions.data                     Data to send to the server
+   * @param  {Function} [options.callback=null]       Handler for success/failure callback
+   * @param  {Boolean} [options.isChangesArray=false] Response contains a changes array that can be fed directly to change-manager.
    * @returns the request callback object if there is one; primarily for use in testing.
    */
-  sendRequest(data, callback, isChangesArray = false) {
+  sendRequest({ data, callback, isChangesArray = false }) {
     if (!this._isOpen()) {
       return !callback ? undefined : callback(new LayerError({
         success: false,

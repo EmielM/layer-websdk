@@ -309,9 +309,14 @@ module.exports = function (grunt) {
 
     // Saucelabs Tests
     connect: {
-			server: {
+			saucelabs: {
         options: {
             port: 9023
+        }
+      },
+      develop: {
+        options: {
+          port: 8001
         }
       }
     },
@@ -394,5 +399,6 @@ module.exports = function (grunt) {
   // Saucelabs Tests
   grunt.loadNpmTasks('grunt-saucelabs');
   grunt.loadNpmTasks('grunt-contrib-connect');
-  grunt.registerTask('sauce', ['connect', 'saucelabs-jasmine']);
+  grunt.registerTask('sauce', ['connect:saucelabs', 'saucelabs-jasmine']);
+  grunt.registerTask("develop", ["connect:develop", "watch"]);
 };

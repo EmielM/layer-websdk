@@ -138,6 +138,37 @@ describe("The Client Authenticator Requests", function() {
             }));
         });
 
+        it("Should call socketRequestManager.sendRequest if sync is false with isChangesArray", function() {
+            var callback = function() {};
+            spyOn(client.socketRequestManager, "sendRequest");
+            client.sendSocketRequest({
+                body: "Hey!",
+                sync: false,
+                isChangesArray: true
+            }, callback);
+            expect(client.socketRequestManager.sendRequest)
+                .toHaveBeenCalledWith({
+                    isChangesArray: true,
+                    data: jasmine.objectContaining({body: "Hey!"}),
+                    callback: callback
+                });
+        });
+
+        it("Should create a SyncEvent with specified depends if sync is true with isChangesArray", function() {
+            spyOn(client.syncManager, "request");
+            client.sendSocketRequest({
+                body: "Hey!",
+                sync: {
+                    depends: ["Fred!"]
+                },
+                isChangesArray: true
+            });
+            expect(client.syncManager.request).toHaveBeenCalledWith(jasmine.objectContaining({
+                depends: ["Fred!"],
+                returnChangesArray: true
+            }));
+        });
+
         it("Should call socketRequestManager.sendRequest if sync is false", function() {
             var callback = function() {};
             spyOn(client.socketRequestManager, "sendRequest");
@@ -146,7 +177,11 @@ describe("The Client Authenticator Requests", function() {
                 sync: false
             }, callback);
             expect(client.socketRequestManager.sendRequest)
-                .toHaveBeenCalledWith(jasmine.objectContaining({body: "Hey!"}), callback);
+                .toHaveBeenCalledWith({
+                    data: jasmine.objectContaining({body: "Hey!"}),
+                    callback: callback,
+                    isChangesArray: false
+                });
         });
     });
 

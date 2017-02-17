@@ -903,10 +903,6 @@ var dbIt = it;
           phone_number: identity.phoneNumber,
           sync_state: identity.syncState,
           type: layer.Identity.UserType,
-          _presence: {
-            status: identity._presence.status,
-            last_seen_at: null
-          }
         }]);
       });
     });

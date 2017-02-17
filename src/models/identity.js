@@ -259,6 +259,7 @@ class Identity extends Syncable {
     status = (status || '').toLowerCase();
     if (!Identity.STATUS[status.toUpperCase()]) throw new Error(LayerError.dictionary.valueNotSupported);
     if (this !== this.getClient().user) throw new Error(LayerError.dictionary.permissionDenied);
+    if (status === Identity.STATUS.INVISIBLE) status = Identity.STATUS.OFFLINE; // these are equivalent; only one supported by server
 
     const oldValue = this._presence.status;
     this.getClient().sendSocketRequest({
@@ -276,6 +277,10 @@ class Identity extends Syncable {
     }, (result) => {
       if (!result.success) this._updateValue(['_presence', 'status'], oldValue);
     });
+
+    // these are equivalent; only one is useful for understanding your state given that your still connected/online.
+    if (status === Identity.STATUS.OFFLINE) status = Identity.STATUS.INVISIBLE;
+
     this._updateValue(['_presence', 'status'], status);
   }
 
