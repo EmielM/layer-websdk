@@ -21,6 +21,8 @@
   * Fixes error where `conversation.lastMessage` was reset
   * Updates `query.totalSize` prior to triggering change events
   * Unit tests no longer choke on browsers that reject dual key indexedDB tables
+  * layer.Websockets.RequestManager's `sendRequest` method now has only a single options argument
+
 
 ## 3.1.1
 

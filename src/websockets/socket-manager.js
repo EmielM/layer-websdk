@@ -428,6 +428,14 @@ class SocketManager extends Root {
    * @param  {Function} callback
    */
   _enablePresence(timestamp, callback) {
+    this.client.socketRequestManager.sendRequest({
+      data: {
+        method: 'Presence.subscribe',
+      },
+      callback: null,
+      isChangesArray: false,
+    });
+
     if (this.client.presenceEnabled) {
       this.client.socketRequestManager.sendRequest({
         data: {
@@ -440,13 +448,6 @@ class SocketManager extends Root {
         isChangesArray: false,
       });
     }
-    this.client.socketRequestManager.sendRequest({
-      data: {
-        method: 'Presence.subscribe',
-      },
-      callback: null,
-      isChangesArray: false,
-    });
 
     if (timestamp) {
       this.syncPresence(timestamp, callback);
