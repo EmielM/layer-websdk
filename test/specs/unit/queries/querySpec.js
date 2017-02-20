@@ -471,7 +471,7 @@ describe("The Query Class", function() {
                 paginationWindow: 15,
                 predicate: 'conversation.id = "' + conversation.id + '"'
             });
-            requestUrl = client.url + "/" + query._firingRequest;
+            requestUrl = query._firingRequest;
             query._firingRequest = requestUrl;
             query.isFiring = true;
         });
@@ -592,6 +592,52 @@ describe("The Query Class", function() {
             jasmine.clock().tick(10000);
             expect(query._run).toHaveBeenCalled();
             query.data = [];
+        });
+
+        it("Should use exponential backoff if results are not up to date", function() {
+            var tmp = layer.Util.getExponentialBackoffSeconds;
+            var lastDelay;
+            conversation.lastMessage = null;
+
+            function processResults() {
+                query._processRunResults({
+                success: true,
+                data: [responses.message1, responses.message1, responses.message1, responses.message1, responses.message1, responses.message1, responses.message1],
+                xhr: {
+                    getResponseHeader: function(name) {
+                        if (name == 'Layout-Count') return 6;
+                        if (name == 'Layer-Conversation-Is-Syncing') return 'true';
+                    }
+                }
+                }, requestUrl, 10);
+            }
+            spyOn(layer.Util, "getExponentialBackoffSeconds").and.callFake(function(maxSeconds, counter) {
+                lastDelay = tmp(maxSeconds, counter);
+                return lastDelay;
+            });
+
+            spyOn(query, "_run").and.callThrough();
+            //spyOn(query, "_appendResults");
+            query.paginationWindow = 15;
+            query.data = [];
+
+            for (var i = 0; i < 9; i++) {
+                processResults();
+                expect(layer.Util.getExponentialBackoffSeconds).toHaveBeenCalledWith(30, i);
+                jasmine.clock().tick(Math.floor(lastDelay * 1000) + 1);
+                expect(query._run).toHaveBeenCalled();
+                expect(query.data).toEqual([]);
+                query._run.calls.reset();
+            }
+
+            processResults();
+            jasmine.clock().tick(Math.floor(lastDelay * 1000) + 1);
+            expect(query._run).not.toHaveBeenCalled();
+            expect(query.data).not.toEqual([]);
+
+            // Cleanup
+            query.data = [];
+            layer.Util.getExponentialBackoffSeconds = tmp;
         });
 
 
