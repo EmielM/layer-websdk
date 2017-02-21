@@ -702,6 +702,9 @@ class ClientAuthenticator extends Root {
    */
   _resetSession() {
     this.isReady = false;
+    this.isConnected = false;
+    this.isAuthenticated = false;
+
     if (this.sessionToken) {
       this.sessionToken = '';
       if (global.localStorage) {
@@ -709,13 +712,9 @@ class ClientAuthenticator extends Root {
       }
     }
 
-    this.isConnected = false;
-    this.isAuthenticated = false;
-
     this.trigger('deauthenticated');
     this.onlineManager.stop();
   }
-
 
   /**
    * Register your IOS device to receive notifications.
@@ -1047,6 +1046,7 @@ class ClientAuthenticator extends Root {
       if (result.status === 401 && this.isAuthenticated) {
         logger.warn('SESSION EXPIRED!');
         this.isAuthenticated = false;
+        this.isReady = false;
         if (global.localStorage) localStorage.removeItem(LOCALSTORAGE_KEYS.SESSIONDATA + this.appId);
         this.trigger('deauthenticated');
         this._authenticate(result.data.getNonce());

@@ -595,8 +595,9 @@ describe("The Client Authenticator Requests", function() {
             });
         });
 
-        it("Should clear isAuthenticated on getting a 401", function() {
+        it("Should clear isAuthenticated and isReady on getting a 401", function() {
             client.isAuthenticated = true;
+            client.isReady = true;
             client._xhrResult({
                 success: false,
                 status: 401,
@@ -609,6 +610,7 @@ describe("The Client Authenticator Requests", function() {
             });
 
             expect(client.isAuthenticated).toBe(false);
+            expect(client.isReady).toBe(false);
         });
 
         it("Should clear localStorage sessionToken on getting a 401", function() {
