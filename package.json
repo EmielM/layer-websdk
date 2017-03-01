@@ -6,6 +6,7 @@
   "homepage": "https://developer.layer.com/docs/websdk",
   "author": "Layer developers <michael@layer.com> (https://layer.com)",
   "main": "index.js",
+  "module": "index-es6.js",
   "repository": {
     "type": "git",
     "url": "layerhq/layer-websdk"
